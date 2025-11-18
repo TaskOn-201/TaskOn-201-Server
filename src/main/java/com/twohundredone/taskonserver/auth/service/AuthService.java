@@ -22,6 +22,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public void signUp(SignUpRequest request) {
@@ -50,8 +51,8 @@ public class AuthService {
         String accessToken = jwtProvider.createAccessToken(principal.getId(), principal.getUsername());
         String refreshToken = jwtProvider.createRefreshToken(principal.getId(), principal.getUsername());
 
-        // TODO: 여기서 refreshToken을 Redis에 저장할 예정 (다음 단계)
-        // refreshTokenService.save(principal.getId(), refreshToken);
+        // Redis에 RefreshToken 저장
+        refreshTokenService.save(principal.getId(), refreshToken, jwtProvider.getRefreshTokenValidityMs());
 
         return new TokenResponse(accessToken, refreshToken);
     }
