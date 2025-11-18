@@ -46,6 +46,10 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    public boolean checkEmail(String email) {
+        return !userRepository.existsByEmail(email);
+    }
+
     public TokenPair login(LoginRequest request) {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 request.email(),
