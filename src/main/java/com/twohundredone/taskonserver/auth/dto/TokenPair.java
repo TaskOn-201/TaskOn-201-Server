@@ -1,8 +1,7 @@
 package com.twohundredone.taskonserver.auth.dto;
 
-public record TokenResponse(
+public record TokenPair(
         String accessToken,
         String refreshToken
 ) {
-
 }
