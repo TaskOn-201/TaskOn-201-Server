@@ -56,4 +56,38 @@ public class AuthService {
 
         return new TokenResponse(accessToken, refreshToken);
     }
+
+    // RefreshToken으로 AccessToken 재발급 (필요시 Refresh도 재발급)
+    public TokenResponse reissue(String refreshToken) {
+        // 1. 토큰 파싱 & 유효성 검증
+        var claims = jwtProvider.parseToken(refreshToken).getBody();
+        Long userId = Long.valueOf(claims.getSubject());
+        String email = claims.get("email", String.class);
+
+        // 2. Redis에서 저장된 RefreshToken 확인
+        String stored = refreshTokenService.get(userId);
+        if (stored == null || !stored.equals(refreshToken)) {
+            throw new IllegalArgumentException("INVALID_REFRESH_TOKEN");
+        }
+
+        // 3. 유저 정보 확인 (탈퇴/정지 등 체크용)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("USER_NOT_FOUND"));
+
+        // 4. 새 AccessToken 발급
+        String newAccessToken = jwtProvider.createAccessToken(user.getUserId(), user.getEmail());
+
+        // TODO: RefreshToken재발급 시 아래 주석제거
+//        String newRefreshToken = jwtProvider.createRefreshToken(user.getUserId(), user.getEmail());
+//        refreshTokenService.save(user.getUserId(), newRefreshToken, jwtProvider.getRefreshTokenValidityMs());
+//        return new TokenResponse(newAccessToken, newRefreshToken);
+
+        // 우선 RefreshToken 재사용: 기존거 내려줌
+        return new TokenResponse(newAccessToken, refreshToken);
+    }
+
+    // 로그아웃(RefreshToken 제거)
+    public void logout(Long userId) {
+        refreshTokenService.delete(userId);
+    }
 }
