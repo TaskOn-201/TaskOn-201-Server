@@ -61,4 +61,9 @@ public class JwtProvider {
     public String getEmail(String token) {
         return parseToken(token).getBody().get("email", String.class);
     }
+
+    // RefreshToken TTL 꺼내오기
+    public long getRefreshTokenValidityMs() {
+        return refreshTokenValidityMs;
+    }
 }
