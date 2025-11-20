@@ -15,6 +15,8 @@ import com.twohundredone.taskonserver.auth.dto.LoginResponse;
 import com.twohundredone.taskonserver.auth.service.AuthService;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -35,6 +37,7 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @Operation(summary = "회원가입", description = "회원가입 API")
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignUpResponse>> signup(@RequestBody @Valid SignUpRequest request) {
         SignUpResponse response = authService.signUp(request);
@@ -43,6 +46,7 @@ public class AuthController {
         );
     }
 
+    @Operation(summary = "이메일 중복 확인", description = "회원가입 시 이메일 중복 확인 API")
     @GetMapping("/check-email")
     public ResponseEntity<ApiResponse<EmailCheckResponse>> checkEmail(@RequestParam String email) {
         boolean isValid = authService.checkEmail(email);
@@ -53,6 +57,7 @@ public class AuthController {
 
     // AccessToken → Body
     // RefreshToken → HttpOnly Cookie
+    @Operation(summary = "로그인", description = "로그인 API - AccessToken → Body / RefreshToken → HttpOnly Cookie")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @RequestBody LoginRequest request,
@@ -66,7 +71,12 @@ public class AuthController {
     }
 
 
-    // AccessToken 재발급
+    @Operation(
+            summary = "토큰 재발급",
+            security = {
+                    @SecurityRequirement(name = "RefreshTokenCookie")
+            }
+    )
     @PostMapping("/reissue")
     public ResponseEntity<ApiResponse<ReissueResponse>> reissue(
             HttpServletRequest request,
@@ -79,6 +89,8 @@ public class AuthController {
         );
     }
 
+    @Operation(summary = "로그아웃", description = "JWT 로그아웃 API")
+    @SecurityRequirement(name = "Authorization")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @AuthenticationPrincipal Long userId,
