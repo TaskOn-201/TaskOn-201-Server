@@ -1,5 +1,6 @@
-package com.twohundredone.taskonserver.common;
+package com.twohundredone.taskonserver.global.exception;
 
+import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import lombok.Getter;
 
 @Getter

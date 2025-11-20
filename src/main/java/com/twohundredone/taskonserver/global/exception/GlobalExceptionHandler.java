@@ -1,5 +1,7 @@
-package com.twohundredone.taskonserver.common;
+package com.twohundredone.taskonserver.global.exception;
 
+import com.twohundredone.taskonserver.global.dto.ApiResponse;
+import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -7,8 +9,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
+@RestControllerAdvice
 public class GlobalExceptionHandler {
     // 비즈니스 로직 예외 (BusinessException)
     @ExceptionHandler(CustomException.class)

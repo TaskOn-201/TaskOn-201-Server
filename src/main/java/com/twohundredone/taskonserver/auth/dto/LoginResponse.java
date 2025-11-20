@@ -1,5 +1,21 @@
 package com.twohundredone.taskonserver.auth.dto;
 
-public record LoginResponse(
-        String accessToken
-) { }
+import lombok.Builder;
+import lombok.Getter;
+
+@Getter
+@Builder
+public class LoginResponse {
+    private boolean isLoggedIn;
+    private String accessToken;
+    private UserInfo user;
+
+    @Getter
+    @Builder
+    public static class UserInfo {
+        private Long userId;
+        private String email;
+        private String name;
+        private String profileImageUrl;
+    }
+}

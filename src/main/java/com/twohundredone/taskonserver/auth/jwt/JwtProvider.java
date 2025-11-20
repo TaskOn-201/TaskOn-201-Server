@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.Key;
 import java.util.Date;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,57 +14,72 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtProvider {
     private final Key key;
-    private final long accessTokenValidityMs;
-    private final long refreshTokenValidityMs;
+    private final long accessTokenValidity;
+    private final long refreshTokenValidity;
 
     public JwtProvider(
-            @Value("${spring.jwt.secret}") String secret,
-            @Value("${spring.jwt.access-token-validity-ms}") long accessTokenValidityMs,   // 15분
-            @Value("${spring.jwt.refresh-token-validity-ms}") long refreshTokenValidityMs // 14일
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.access-token-validity-ms}") long accessTokenValidity,   // 15분
+            @Value("${jwt.refresh-token-validity-ms}") long refreshTokenValidity // 14일
     ) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
-        this.accessTokenValidityMs = accessTokenValidityMs;
-        this.refreshTokenValidityMs = refreshTokenValidityMs;
+        this.accessTokenValidity = accessTokenValidity;
+        this.refreshTokenValidity = refreshTokenValidity;
     }
 
     public String createAccessToken(Long userId, String email) {
-        return createToken(userId, email, accessTokenValidityMs);
+        return createToken(userId, email, accessTokenValidity);
     }
 
     public String createRefreshToken(Long userId, String email) {
-        return createToken(userId, email, refreshTokenValidityMs);
+        return createToken(userId, email, refreshTokenValidity);
     }
 
-    private String createToken(Long userId, String email, long validityMs) {
-        long now = System.currentTimeMillis();
-        Date expiry = new Date(now + validityMs);
+    private String createToken(Long userId, String email, long validity) {
+        Date now = new Date();
 
         return Jwts.builder()
-                .setSubject(String.valueOf(userId))
+                .claim("userId", userId)
                 .claim("email", email)
-                .setIssuedAt(new Date(now))
-                .setExpiration(expiry)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + validity))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public Jws<Claims> parseToken(String token) {
-        return Jwts.parserBuilder()
+    public boolean validateToken(String token) {
+        Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token);
+        return true;
     }
 
     public Long getUserId(String token) {
-        return Long.valueOf(parseToken(token).getBody().getSubject());
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", Long.class);
     }
 
     public String getEmail(String token) {
-        return parseToken(token).getBody().get("email", String.class);
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("email", String.class);
     }
 
-    // RefreshToken TTL 꺼내오기
-    public long getRefreshTokenValidityMs() {
-        return refreshTokenValidityMs;
+    public String resolveAccessToken(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        if (bearer == null || !bearer.startsWith("Bearer ")) return null;
+        return bearer.substring(7);
+    }
+
+    public long getRefreshTokenValidity() {
+        return refreshTokenValidity;
     }
 }

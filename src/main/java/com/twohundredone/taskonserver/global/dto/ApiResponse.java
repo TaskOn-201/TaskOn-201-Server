@@ -1,5 +1,7 @@
-package com.twohundredone.taskonserver.common;
+package com.twohundredone.taskonserver.global.dto;
 
+import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
+import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import lombok.Builder;
 import lombok.Getter;
 

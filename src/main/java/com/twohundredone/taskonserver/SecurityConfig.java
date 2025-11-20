@@ -1,8 +1,13 @@
 package com.twohundredone.taskonserver;
 
 import com.twohundredone.taskonserver.auth.jwt.JwtAuthenticationFilter;
+import com.twohundredone.taskonserver.auth.jwt.JwtExceptionFilter;
 import com.twohundredone.taskonserver.auth.jwt.JwtProvider;
+import com.twohundredone.taskonserver.auth.oauth2.OAuth2SuccessHandler;
+import com.twohundredone.taskonserver.auth.oauth2.service.Oauth2CustomUserService;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetailsService;
+import com.twohundredone.taskonserver.global.security.JwtAccessDeniedHandler;
+import com.twohundredone.taskonserver.global.security.JwtAuthenticationEntryPoint;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +32,21 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final Oauth2CustomUserService oauth2CustomUserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+
+    // 🔥 JWT 필터 Bean 등록
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtProvider, customUserDetailsService);
+    }
+
+    // 🔥 JWT 예외 필터 Bean 등록
+    @Bean
+    public JwtExceptionFilter jwtExceptionFilter() {
+        return new JwtExceptionFilter();
+    }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -37,27 +57,36 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+                        .accessDeniedHandler(new JwtAccessDeniedHandler())
+                )
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/auth/signup",
-                                "/api/auth/login",
-                                "/api/auth/reissue",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()
+                        .requestMatchers("/api/auth/signup").permitAll()
+                        .requestMatchers("/api/auth/check-email").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/reissue").permitAll()
+                        .requestMatchers("/oauth2/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // 로그아웃은 인증 필요
+                        .requestMatchers("/api/auth/logout").authenticated()
                         .anyRequest().authenticated()
                 )
 
-                // ✅ JWT 필터 등록
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(user -> user.userService(oauth2CustomUserService))
+                        .successHandler(oAuth2SuccessHandler)
+                );
+
+        // JWT 필터 등록
+        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtExceptionFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }
 
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtProvider, customUserDetailsService);
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
