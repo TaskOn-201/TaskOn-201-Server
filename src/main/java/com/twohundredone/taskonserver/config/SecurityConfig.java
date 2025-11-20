@@ -1,4 +1,4 @@
-package com.twohundredone.taskonserver;
+package com.twohundredone.taskonserver.config;
 
 import com.twohundredone.taskonserver.auth.jwt.JwtAuthenticationFilter;
 import com.twohundredone.taskonserver.auth.jwt.JwtExceptionFilter;
