@@ -1,20 +1,27 @@
 package com.twohundredone.taskonserver.auth.controller;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.EMAIL_AVAILABLE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.SIGNUP_SUCCESS;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.SUCCESS_LOGOUT;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TOKEN_REISSUE_SUCCESS;
+
+import com.twohundredone.taskonserver.auth.dto.EmailCheckResponse;
 import com.twohundredone.taskonserver.auth.dto.LoginRequest;
+import com.twohundredone.taskonserver.auth.dto.ReissueResponse;
 import com.twohundredone.taskonserver.auth.dto.SignUpRequest;
+import com.twohundredone.taskonserver.auth.dto.SignUpResponse;
 import com.twohundredone.taskonserver.auth.dto.TokenPair;
 import com.twohundredone.taskonserver.auth.dto.LoginResponse;
 import com.twohundredone.taskonserver.auth.service.AuthService;
+import com.twohundredone.taskonserver.global.dto.ApiResponse;
+import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,68 +36,58 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/signup")
-    public ResponseEntity<Void> signup(@RequestBody @Valid SignUpRequest request) {
-        authService.signUp(request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<ApiResponse<SignUpResponse>> signup(@RequestBody @Valid SignUpRequest request) {
+        SignUpResponse response = authService.signUp(request);
+        return ResponseEntity.ok(
+                ApiResponse.success(SIGNUP_SUCCESS, response)
+        );
     }
 
     @GetMapping("/check-email")
-    public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
+    public ResponseEntity<ApiResponse<EmailCheckResponse>> checkEmail(@RequestParam String email) {
         boolean isValid = authService.checkEmail(email);
-        return ResponseEntity.ok(isValid); // boolean → Boolean 자동 박싱
+        return ResponseEntity.ok(
+                ApiResponse.success(EMAIL_AVAILABLE, new EmailCheckResponse(isValid))
+        );
     }
 
     // AccessToken → Body
     // RefreshToken → HttpOnly Cookie
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
             @RequestBody LoginRequest request,
             HttpServletResponse response
     ) {
-        TokenPair tokens = authService.login(request);
+        LoginResponse loginResponse = authService.login(request, response);
 
-        // RefreshToken을 HttpOnly 쿠키에 저장
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokens.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .path("/")
-                .maxAge(60 * 60 * 24 * 14) // 14일
-                .build();
-
-        response.addHeader("Set-Cookie", refreshCookie.toString());
-
-        // AccessToken만 반환
-        return ResponseEntity.ok(new LoginResponse(tokens.accessToken()));
+        return ResponseEntity.ok(
+                ApiResponse.success(ResponseStatusSuccess.LOGIN_SUCCESS, loginResponse)
+        );
     }
 
 
     // AccessToken 재발급
     @PostMapping("/reissue")
-    public ResponseEntity<LoginResponse> reissue(
+    public ResponseEntity<ApiResponse<ReissueResponse>> reissue(
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        TokenPair tokens = authService.reissue(request, response);
-        return ResponseEntity.ok(new LoginResponse(tokens.accessToken()));
+        ReissueResponse token = authService.reissue(request, response);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(TOKEN_REISSUE_SUCCESS, token)
+        );
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@AuthenticationPrincipal Long userId, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal Long userId,
+            HttpServletResponse response
+    ) {
+        authService.logout(userId, response);
 
-        authService.logout(userId);
-
-        // RefreshToken 쿠키 삭제
-        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .path("/")
-                .maxAge(0)
-                .build();
-
-        response.addHeader("Set-Cookie", deleteCookie.toString());
-
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(
+                ApiResponse.success(SUCCESS_LOGOUT, null)
+        );
     }
 }

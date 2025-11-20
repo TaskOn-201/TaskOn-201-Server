@@ -1,19 +1,26 @@
 package com.twohundredone.taskonserver.auth.service;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.EMAIL_ALREADY_EXISTS;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.INVALID_REFRESH_TOKEN;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PASSWORD_INCORRECT;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PASSWORD_INCORRECT_MISMATCH;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.REFRESH_TOKEN_NOT_FOUND;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.USER_NOT_FOUND;
+
 import com.twohundredone.taskonserver.auth.dto.LoginRequest;
+import com.twohundredone.taskonserver.auth.dto.LoginResponse;
+import com.twohundredone.taskonserver.auth.dto.ReissueResponse;
 import com.twohundredone.taskonserver.auth.dto.SignUpRequest;
-import com.twohundredone.taskonserver.auth.dto.TokenPair;
+import com.twohundredone.taskonserver.auth.dto.SignUpResponse;
 import com.twohundredone.taskonserver.auth.jwt.JwtProvider;
+import com.twohundredone.taskonserver.auth.util.CookieUtil;
+import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,18 +30,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
 
     @Transactional
-    public void signUp(SignUpRequest request) {
+    public SignUpResponse signUp(SignUpRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("DUPLICATE_EMAIL");
+            throw new CustomException(EMAIL_ALREADY_EXISTS);
         }
 
         if (!request.password().equals(request.passwordCheck())){
-            throw new IllegalArgumentException("PASSWORD_INCORRECT_MISMATCH");
+            throw new CustomException(PASSWORD_INCORRECT_MISMATCH);
         }
 
         User user = User.builder()
@@ -44,96 +50,105 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        return SignUpResponse.builder()
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .profileImageUrl(user.getProfileImageUrl())
+                .build();
     }
 
     public boolean checkEmail(String email) {
-        return !userRepository.existsByEmail(email);
+        if (userRepository.existsByEmail(email)) {
+            throw new CustomException(EMAIL_ALREADY_EXISTS);
+        }
+        return true;
     }
 
-    public TokenPair login(LoginRequest request) {
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                request.email(),
-                request.password()
-        );
-
-        // TODO: 로그인 된 사용자인지 boolean값 response해주도록 코드 수정
-
-        User user = userRepository.findByEmail(request.email()).orElseThrow(
-                () -> new IllegalArgumentException("USER_NOT_FOUND")
-        );
+    @Transactional
+    public LoginResponse  login(LoginRequest request, HttpServletResponse response) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new IllegalArgumentException("PASSWORD_INCORRECT");
+            throw new CustomException(PASSWORD_INCORRECT);
         }
 
-        Authentication authenticated = authenticationManager.authenticate(authentication);
-        CustomUserDetails principal = (CustomUserDetails) authenticated.getPrincipal();
-
-        String accessToken = jwtProvider.createAccessToken(principal.getId(), principal.getUsername());
-        String refreshToken = jwtProvider.createRefreshToken(principal.getId(), principal.getUsername());
+        String accessToken = jwtProvider.createAccessToken(user.getUserId(), user.getEmail());
+        String refreshToken = jwtProvider.createRefreshToken(user.getUserId(), user.getEmail());
 
         // Redis에 RefreshToken 저장
-        refreshTokenService.save(principal.getId(), refreshToken, jwtProvider.getRefreshTokenValidityMs());
+        refreshTokenService.save(
+                user.getUserId(),
+                refreshToken,
+                jwtProvider.getRefreshTokenValidity() // TTL(ms)
+        );
 
-        return new TokenPair(accessToken, refreshToken);
+        // RefreshToken → Cookie 저장
+        CookieUtil.addRefreshTokenCookie(response, refreshToken);
+
+        return LoginResponse.builder()
+                .isLoggedIn(true)
+                .accessToken(accessToken)
+                .user(LoginResponse.UserInfo.builder()
+                        .userId(user.getUserId())
+                        .email(user.getEmail())
+                        .name(user.getName())
+                        .profileImageUrl(user.getProfileImageUrl())
+                        .build())
+                .build();
     }
 
-    public TokenPair reissue(HttpServletRequest request, HttpServletResponse response) {
-
-        // 쿠키에서 RefreshToken 가져오기
-        String refreshToken = extractRefreshToken(request);
-        if (refreshToken == null)
-            throw new IllegalArgumentException("NO_REFRESH_TOKEN_IN_COOKIE");
-
-        // 토큰 파싱 (유효성 + 만료 여부 확인)
-        var claims = jwtProvider.parseToken(refreshToken).getBody();
-        Long userId = Long.valueOf(claims.getSubject());
-        String email = claims.get("email", String.class);
-
-        // Redis 저장 RefreshToken과 비교
-        String saved = refreshTokenService.get(userId);
-        if (saved == null || !saved.equals(refreshToken)) {
-            throw new IllegalArgumentException("INVALID_REFRESH_TOKEN");
+    public ReissueResponse reissue(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = CookieUtil.getRefreshTokenFromCookie(request);
+        if (refreshToken == null) {
+            throw new CustomException(REFRESH_TOKEN_NOT_FOUND);
         }
 
-        // 유저 검증
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("USER_NOT_FOUND"));
+        // RefreshToken 유효성 검증
+        jwtProvider.validateToken(refreshToken);
 
-        // AccessToken 재발급
-        String newAccessToken = jwtProvider.createAccessToken(user.getUserId(), user.getEmail());
+        Long userId = jwtProvider.getUserId(refreshToken);
 
-        // RefreshToken Rotation(재발급) — 기업형 보안
-        String newRefreshToken = jwtProvider.createRefreshToken(user.getUserId(), user.getEmail());
-        refreshTokenService.save(user.getUserId(), newRefreshToken, jwtProvider.getRefreshTokenValidityMs());
+        // Redis에서 RefreshToken 조회
+        String storedToken = refreshTokenService.get(userId);
+        if (storedToken == null || !storedToken.equals(refreshToken)) {
+            throw new CustomException(INVALID_REFRESH_TOKEN);
+        }
 
-        // 새 RefreshToken을 쿠키에 저장
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", newRefreshToken)
+        // AccessToken과 RefreshToken 재발급
+        String email = jwtProvider.getEmail(refreshToken);
+        String newAccess = jwtProvider.createAccessToken(userId, email);
+        String newRefresh = jwtProvider.createRefreshToken(userId, email);
+
+        // Redis에 RefreshToken 갱신 저장 (TTL 그대로 유지)
+        refreshTokenService.save(
+                userId,
+                newRefresh,
+                jwtProvider.getRefreshTokenValidity()
+        );
+
+        // 쿠키 재설정
+        CookieUtil.addRefreshTokenCookie(response, newRefresh);
+
+        return new ReissueResponse(newAccess);
+    }
+
+    // 로그아웃(RefreshToken 제거)
+    public void logout(Long userId, HttpServletResponse response)  {
+        // 1) Refresh Token 삭제 (Redis)
+        refreshTokenService.delete(userId);
+
+        // 2) Refresh Token Cookie 삭제
+        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None")
                 .path("/")
-                .maxAge(jwtProvider.getRefreshTokenValidityMs() / 1000)
+                .maxAge(0)
                 .build();
 
-        response.addHeader("Set-Cookie", cookie.toString());
-
-        return new TokenPair(newAccessToken, newRefreshToken);
-    }
-
-    private String extractRefreshToken(HttpServletRequest request) {
-        if (request.getCookies() == null)
-            return null;
-        for (Cookie cookie : request.getCookies()) {
-            if (cookie.getName().equals("refreshToken")) {
-                return cookie.getValue();
-            }
-        }
-        return null;
-    }
-
-    // 로그아웃(RefreshToken 제거)
-    public void logout(Long userId) {
-        refreshTokenService.delete(userId);
+        response.addHeader("Set-Cookie", deleteCookie.toString());
     }
 }

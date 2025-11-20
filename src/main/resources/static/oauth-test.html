@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>OAuth2 Login Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+    }
+    button {
+      padding: 12px 20px;
+      margin: 10px 0;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .google { background-color: #4285F4; color: white; }
+    .kakao { background-color: #FEE500; color: #3C1E1E; }
+    .token-box {
+      margin-top: 30px;
+      padding: 20px;
+      background: #eee;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>OAuth2 Login Test Page</h2>
+<p>아래 버튼을 눌러 OAuth2 로그인</p>
+
+<button class="google" onclick="oauthLogin('google')">Google Login</button>
+<br>
+<button class="kakao" onclick="oauthLogin('kakao')">Kakao Login</button>
+
+<div class="token-box">
+  <h3>받아온 Access Token</h3>
+  <p id="token"></p>
+</div>
+
+<script src="oauth-test.js"></script>
+
+</body>
+</html>
