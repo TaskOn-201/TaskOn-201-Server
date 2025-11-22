@@ -47,7 +47,6 @@ public class SecurityConfig {
         return new JwtExceptionFilter();
     }
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
