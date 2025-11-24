@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum ResponseStatusSuccess {
 
     SIGNUP_SUCCESS(201, "회원가입 성공"),
+    PROJECT_CREATE(201, "프로젝트 생성 완료"),
     LOGIN_SUCCESS(200, "로그인 성공"),
     SUCCESS_LOGOUT(200, "로그아웃 성공"),
     EMAIL_AVAILABLE(200, "사용 가능한 이메일입니다."),
