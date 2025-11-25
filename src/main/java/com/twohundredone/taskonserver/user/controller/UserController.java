@@ -1,6 +1,9 @@
 package com.twohundredone.taskonserver.user.controller;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.MODIFY_USER_INFO_SUCCESS;
+
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
+import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.user.dto.UserProfileResponse;
 import com.twohundredone.taskonserver.user.dto.UserProfileUpdateRequest;
 import com.twohundredone.taskonserver.user.service.UserService;
@@ -22,14 +25,14 @@ public class UserController {
     private final UserService userService;
 
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<UserProfileResponse> updateProfile(
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage,
             @RequestPart(value = "request") UserProfileUpdateRequest request
     ) {
-        UserProfileResponse response = userService.updateProfile(
-                userDetails.getId(), request, profileImage);
-
-        return ResponseEntity.ok(response);
+        UserProfileResponse response = userService.updateProfile(userDetails.getId(), request, profileImage);
+        return ResponseEntity.ok(
+            ApiResponse.success(MODIFY_USER_INFO_SUCCESS, response)
+        );
     }
 }
