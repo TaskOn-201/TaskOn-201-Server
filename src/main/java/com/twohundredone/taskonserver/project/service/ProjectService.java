@@ -49,9 +49,8 @@ public class ProjectService {
                 .build();
     }
 
-//    public Optional<ProjectSelectResponse> selectProject(Long projectId, CustomUserDetails userDetails) {
-//        Long userId = userDetails.getId();
-//        Optional<ProjectSelectResponse> projectAndRole = projectRepository.findProjectWithMemberRole(projectId, userId);
-//
-//    }
+    public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
+        Long userId = userDetails.getId();
+        return projectRepository.findProjectWithMemberRole(projectId, userId);
+    }
 }
