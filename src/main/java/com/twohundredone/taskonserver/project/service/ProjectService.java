@@ -8,6 +8,7 @@ import com.twohundredone.taskonserver.project.dto.ProjectCreateResponse;
 import com.twohundredone.taskonserver.project.dto.ProjectSelectResponse;
 import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.project.entity.ProjectMember;
+import com.twohundredone.taskonserver.project.enums.Role;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.user.entity.User;
@@ -37,6 +38,9 @@ public class ProjectService {
         project.addLeader(creator);
 
         Project savedProject = projectRepository.save(project);
+
+        ProjectMember projectMember = ProjectMember.builder().project(savedProject).user(creator).role(Role.LEADER).build();
+        projectMemberRepository.save(projectMember);
 
         return ProjectCreateResponse.builder()
                 .projectId(project.getProjectId())

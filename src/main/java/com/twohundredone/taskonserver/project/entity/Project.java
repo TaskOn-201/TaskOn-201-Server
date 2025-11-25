@@ -31,7 +31,4 @@ public class Project extends BaseEntity {
     public void addLeader(User user){
         ProjectMember projectMember = ProjectMember.builder().project(this).user(user).role(Role.LEADER).build();
     }
-
-//    @OneToMany
-//    @JoinColumn("project_id")
 }
