@@ -32,6 +32,6 @@ public class ProjectController {
     @GetMapping("/{projectId}")
     public ResponseEntity<ApiResponse<ProjectSelectResponse>> selectProject(@PathVariable Long projectId, @AuthenticationPrincipal CustomUserDetails userDetails){
         ProjectSelectResponse response = projectService.selectProject(projectId, userDetails);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.PROJECT_CREATE, response));
+        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.PROJECT_SELECT, response));
     }
 }
