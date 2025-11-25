@@ -1,19 +1,24 @@
 package com.twohundredone.taskonserver.project.entity;
 
+import com.twohundredone.taskonserver.common.entity.BaseEntity;
 import com.twohundredone.taskonserver.project.enums.Role;
 import com.twohundredone.taskonserver.user.entity.User;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
 @NoArgsConstructor
-public class ProjectMember {
+@AllArgsConstructor
+@Builder
+public class ProjectMember extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "project_member_id")
-    private Long projectMemeberId;
+    private Long projectMemberId;
 
     @Column(nullable = false, name = "project_role")
     @Enumerated(EnumType.STRING)
@@ -24,6 +29,6 @@ public class ProjectMember {
     private Project project;
 
     @ManyToOne
-    @JoinColumn(name = "user_Id")
+    @JoinColumn(name = "user_id")
     private User user;
 }

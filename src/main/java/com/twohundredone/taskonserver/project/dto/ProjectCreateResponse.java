@@ -9,7 +9,7 @@ import org.springframework.data.annotation.Id;
 @Builder
 public class ProjectCreateResponse {
     @Id
-    private String projectId;
+    private Long projectId;
     @NotBlank
     private String projectName;
     private String projectDescription;

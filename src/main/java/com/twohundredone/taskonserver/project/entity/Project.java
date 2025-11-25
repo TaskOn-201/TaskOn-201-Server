@@ -1,6 +1,9 @@
 package com.twohundredone.taskonserver.project.entity;
 
+import com.twohundredone.taskonserver.common.entity.BaseEntity;
 import com.twohundredone.taskonserver.project.dto.ProjectCreateResponse;
+import com.twohundredone.taskonserver.project.enums.Role;
+import com.twohundredone.taskonserver.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Table(name = "Projects")
 @Builder
-public class Project {
+public class Project extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "project_id")
@@ -24,4 +27,11 @@ public class Project {
 
     @Column(name = "descripton")
     private String projectDescription;
+
+    public void addLeader(User user){
+        ProjectMember projectMember = ProjectMember.builder().project(this).user(user).role(Role.LEADER).build();
+    }
+
+//    @OneToMany
+//    @JoinColumn("project_id")
 }

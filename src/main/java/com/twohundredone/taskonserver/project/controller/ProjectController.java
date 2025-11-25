@@ -1,5 +1,6 @@
 package com.twohundredone.taskonserver.project.controller;
 
+import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.project.dto.ProjectCreateRequest;
@@ -21,14 +22,14 @@ public class ProjectController {
 
     @Operation(summary = "프로젝트 생성", description = "프로젝트 생성 API")
     @PostMapping
-    public ResponseEntity<ApiResponse<ProjectCreateResponse>> createProject(@RequestBody ProjectCreateRequest projectCreateRequest) {
-        ProjectCreateResponse response = projectService.createProject(projectCreateRequest);
+    public ResponseEntity<ApiResponse<ProjectCreateResponse>> createProject(@RequestBody ProjectCreateRequest projectCreateRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        ProjectCreateResponse response = projectService.createProject(projectCreateRequest, userDetails);
         return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.PROJECT_CREATE, response));
     }
 
-    @GetMapping("/{projectId}")
-    public ResponseEntity<ApiResponse<ProjectSelectResponse>> selectProject(@PathVariable Long projectId){
-        ProjectSelectResponse response = projectService.selectProject(projectId);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.PROJECT_CREATE, response));
-    }
+//    @GetMapping("/{projectId}")
+//    public ResponseEntity<ApiResponse<ProjectSelectResponse>> selectProject(@PathVariable Long projectId, @AuthenticationPrincipal CustomUserDetails userDetails){
+//        ProjectSelectResponse response = projectService.selectProject(projectId, userDetails);
+//        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.PROJECT_CREATE, response));
+//    }
 }
