@@ -6,6 +6,7 @@ import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.dto.ProjectCreateRequest;
 import com.twohundredone.taskonserver.project.dto.ProjectCreateResponse;
 import com.twohundredone.taskonserver.project.dto.ProjectSelectResponse;
+import com.twohundredone.taskonserver.project.dto.TaskListResponse;
 import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.project.entity.ProjectMember;
 import com.twohundredone.taskonserver.project.enums.Role;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -52,5 +54,10 @@ public class ProjectService {
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
         return projectRepository.findProjectWithMemberRole(projectId, userId);
+    }
+
+    public List<TaskListResponse> getProject(CustomUserDetails userDetails) {
+        Long userId = userDetails.getId();
+        return projectRepository.findProjectListByUserId(userId);
     }
 }
