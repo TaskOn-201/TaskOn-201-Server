@@ -63,7 +63,7 @@ public class ProjectService {
         for(ProjectMember projectMember : projectMembers) {
             List<Project> projects = projectRepository.findAllByProjectId(projectMember.getProject().getProjectId());
             List<TaskListResponse> currentTaskResponse = projects.stream()
-                    .map(project -> new TaskListResponse(project.getProjectId(), project.getProjectName(), projectMember.getRole())).collect(Collectors.toList());
+                    .map(project -> new TaskListResponse(project.getProjectId(), project.getProjectName(), projectMember.getRole())).toList();
             taskListResponses.addAll(currentTaskResponse);
         }
 
@@ -83,5 +83,19 @@ public class ProjectService {
         List<SidebarInfoResponse.OnlineUsersInfo> onlineUsersInfoList = List.of(onlineUsersInfo);
 
         return SidebarInfoResponse.builder().project(projectInfo).onlineUser(onlineUsersInfoList).build();
+    }
+
+    public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
+        Long userId = userDetails.getId();
+        List<ProjectMemberListResponse> projectMemberListResponses = new ArrayList<>();
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+        for(ProjectMember projectMember : projectMembers) {
+            List<User> users = userRepository.findAllByUserId(projectMember.getUser().getUserId());
+            List<ProjectMemberListResponse> currentprojectMemberList = users.stream()
+                    .map(user -> new ProjectMemberListResponse(user.getUserId(), user.getName(), user.getEmail(), user.getProfileImageUrl(), projectMember.getRole()))
+                    .toList();
+            projectMemberListResponses.addAll(currentprojectMemberList);
+        }
+        return  projectMemberListResponses;
     }
 }

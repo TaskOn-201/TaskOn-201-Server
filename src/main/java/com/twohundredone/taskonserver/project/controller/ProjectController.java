@@ -45,4 +45,10 @@ public class ProjectController {
         SidebarInfoResponse response = projectService.getSidebarInfo(userDetails, projectId);
         return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_SIDEBAR_INFO, response));
     }
+    
+    @GetMapping("/{projectId}/members")
+    public ResponseEntity<ApiResponse<List<ProjectMemberListResponse>>> getProjectMemberList(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
+        List<ProjectMemberListResponse> responses = projectService.getProjectMemberList(userDetails, projectId);
+        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_MEMBER, responses));
+    }
 }

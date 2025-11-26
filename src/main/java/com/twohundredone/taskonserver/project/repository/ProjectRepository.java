@@ -16,8 +16,5 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "WHERE p.projectId = :projectId AND pm.user.userId = :userId")
     Optional<ProjectSelectResponse> findProjectWithMemberRole(@Param("projectId") Long projectId, @Param("userId") Long userId);
 
-//    @Query("SELECT new com.twohundredone.taskonserver.project.dto.TaskListResponse(p.projectId, p.projectName, pm.role) " +
-//            " FROM Project p join ProjectMember pm ON p.projectId = pm.project.projectId" +
-//            " WHERE pm.user.userId = :userId")
     List<Project> findAllByProjectId(Long projectId);
 }
