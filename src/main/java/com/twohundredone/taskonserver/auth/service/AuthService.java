@@ -17,6 +17,7 @@ import com.twohundredone.taskonserver.auth.util.CookieUtil;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
+import com.twohundredone.taskonserver.user.service.OnlineStatusService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
+    private final OnlineStatusService onlineStatusService;
 
     @Transactional
     public SignUpResponse signUp(SignUpRequest request) {
@@ -88,8 +90,9 @@ public class AuthService {
         // RefreshToken → Cookie 저장
         CookieUtil.addRefreshTokenCookie(response, refreshToken);
 
+        onlineStatusService.setOnline(user.getUserId());
+
         return LoginResponse.builder()
-                .isLoggedIn(true)
                 .accessToken(accessToken)
                 .user(LoginResponse.UserInfo.builder()
                         .userId(user.getUserId())
@@ -136,9 +139,9 @@ public class AuthService {
     }
 
     // 로그아웃(RefreshToken 제거)
-    public void logout(Long userId, HttpServletResponse response)  {
+    public void logout(CustomUserDetails userDetails, HttpServletResponse response)  {
         // 1) Refresh Token 삭제 (Redis)
-        refreshTokenService.delete(userId);
+        refreshTokenService.delete(userDetails.getId());
 
         // 2) Refresh Token Cookie 삭제
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
@@ -150,5 +153,6 @@ public class AuthService {
                 .build();
 
         response.addHeader("Set-Cookie", deleteCookie.toString());
+        onlineStatusService.setOffline(userDetails.getId());
     }
 }

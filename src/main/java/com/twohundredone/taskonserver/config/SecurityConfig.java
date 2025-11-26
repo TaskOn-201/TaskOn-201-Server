@@ -8,6 +8,7 @@ import com.twohundredone.taskonserver.auth.oauth2.service.Oauth2CustomUserServic
 import com.twohundredone.taskonserver.auth.service.CustomUserDetailsService;
 import com.twohundredone.taskonserver.global.security.JwtAccessDeniedHandler;
 import com.twohundredone.taskonserver.global.security.JwtAuthenticationEntryPoint;
+import com.twohundredone.taskonserver.user.service.OnlineStatusService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -34,11 +35,12 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final Oauth2CustomUserService oauth2CustomUserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OnlineStatusService onlineStatusService;
 
     // 🔥 JWT 필터 Bean 등록
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtProvider, customUserDetailsService);
+        return new JwtAuthenticationFilter(jwtProvider, customUserDetailsService, onlineStatusService);
     }
 
     // 🔥 JWT 예외 필터 Bean 등록
