@@ -48,4 +48,8 @@ public class User {
     public void updateProfileImage(String imageUrl) {
         this.profileImageUrl = imageUrl;
     }
+
+    public void updatePassword(String password) {
+        this.password = password;
+    }
 }

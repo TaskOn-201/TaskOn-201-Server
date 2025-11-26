@@ -2,6 +2,7 @@ package com.twohundredone.taskonserver.auth.jwt;
 
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetailsService;
+import com.twohundredone.taskonserver.user.service.OnlineStatusService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -21,6 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final OnlineStatusService onlineStatusService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -45,6 +47,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(auth);
+
+            onlineStatusService.refresh(userId);
         }
 
         filterChain.doFilter(request, response);

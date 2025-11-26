@@ -13,6 +13,7 @@ import com.twohundredone.taskonserver.auth.dto.SignUpResponse;
 import com.twohundredone.taskonserver.auth.dto.TokenPair;
 import com.twohundredone.taskonserver.auth.dto.LoginResponse;
 import com.twohundredone.taskonserver.auth.service.AuthService;
+import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,7 +40,7 @@ public class AuthController {
 
     @Operation(summary = "회원가입", description = "회원가입 API")
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<SignUpResponse>> signup(@RequestBody @Valid SignUpRequest request) {
+    public ResponseEntity<ApiResponse<SignUpResponse>> signup(@Valid @RequestBody SignUpRequest request) {
         SignUpResponse response = authService.signUp(request);
         return ResponseEntity.ok(
                 ApiResponse.success(SIGNUP_SUCCESS, response)
@@ -93,10 +94,10 @@ public class AuthController {
     @SecurityRequirement(name = "Authorization")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletResponse response
     ) {
-        authService.logout(userId, response);
+        authService.logout(userDetails.getId(), response);
 
         return ResponseEntity.ok(
                 ApiResponse.success(SUCCESS_LOGOUT, null)
