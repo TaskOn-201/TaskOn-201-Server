@@ -12,6 +12,7 @@ import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final OAuth2UserService oAuth2UserService;
 
     @Transactional
     public ProjectCreateResponse createProject(ProjectCreateRequest projectCreateRequest, CustomUserDetails userDetails) {
@@ -98,4 +100,32 @@ public class ProjectService {
         }
         return  projectMemberListResponses;
     }
+
+    public ProjectSettingsResponseInfo ProjectSettingsResponseInfo(CustomUserDetails userDetails, Long projectId) {
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+
+        ProjectSettingsResponseInfo.Leader leader = null;
+        List<ProjectSettingsResponseInfo.Member> members  = new ArrayList<>();
+
+        List<ProjectMember> projectMembers =  projectMemberRepository.findAllByProject_ProjectId(projectId);
+
+        for(ProjectMember projectMember : projectMembers) {
+            User user = projectMember.getUser();
+
+            ProjectSettingsResponseInfo.Member currentMember =
+                    ProjectSettingsResponseInfo.Member.builder().userId(user.getUserId())
+                            .name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
+
+            members.add(currentMember);
+
+            if(projectMember.getRole().equals(Role.LEADER)) {
+                leader = ProjectSettingsResponseInfo.Leader.builder().userId(user.getUserId())
+                        .name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
+            }}
+
+        return ProjectSettingsResponseInfo.builder().projectId(project.getProjectId()).projectName(project.getProjectName())
+                .leader(leader).member(members).build();
+    }
+
+    //TODO: stream 이용
 }

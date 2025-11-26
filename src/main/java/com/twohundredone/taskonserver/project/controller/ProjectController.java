@@ -7,6 +7,7 @@ import com.twohundredone.taskonserver.project.dto.*;
 import com.twohundredone.taskonserver.project.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -50,5 +51,11 @@ public class ProjectController {
     public ResponseEntity<ApiResponse<List<ProjectMemberListResponse>>> getProjectMemberList(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
         List<ProjectMemberListResponse> responses = projectService.getProjectMemberList(userDetails, projectId);
         return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_MEMBER, responses));
+    }
+
+    @GetMapping("/{projectId}/settings")
+    public ResponseEntity<ApiResponse<ProjectSettingsResponseInfo>> getProjectSettingsInfo(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
+        ProjectSettingsResponseInfo response = projectService.ProjectSettingsResponseInfo(userDetails, projectId);
+        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_SETTINGS, response));
     }
 }

@@ -32,4 +32,6 @@ public class ProjectMember extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+
 }
