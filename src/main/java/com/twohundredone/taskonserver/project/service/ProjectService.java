@@ -125,7 +125,20 @@ public class ProjectService {
 
         return ProjectSettingsResponseInfo.builder().projectId(project.getProjectId()).projectName(project.getProjectName())
                 .leader(leader).member(members).build();
+
+        //TODO: stream 이용
     }
 
-    //TODO: stream 이용
+
+    public String deleteProject(CustomUserDetails userDetails, Long projectId, ProjectDeleteRequest projectDeleteRequest) {
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        List<ProjectMember> projectMember = projectMemberRepository.findAllByProject_ProjectId(projectId);
+        Boolean user = projectMember.stream().map(pm -> pm.getRole().equals(Role.LEADER)).findFirst().orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
+
+        if (projectDeleteRequest.projectName().equals(project.getProjectName()) || user)
+        {
+            projectRepository.deleteById(projectId);
+        }
+        return "";
+    }
 }

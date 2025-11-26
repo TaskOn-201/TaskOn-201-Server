@@ -58,4 +58,10 @@ public class ProjectController {
         ProjectSettingsResponseInfo response = projectService.ProjectSettingsResponseInfo(userDetails, projectId);
         return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_SETTINGS, response));
     }
+
+    @DeleteMapping("{projectId}")
+    public ResponseEntity<ApiResponse<String>> deleteProject(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId, @RequestBody ProjectDeleteRequest projectDeleteRequest){
+        String response = projectService.deleteProject(userDetails, projectId, projectDeleteRequest);
+        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.DELETE_PROJECT, response));
+    }
 }
