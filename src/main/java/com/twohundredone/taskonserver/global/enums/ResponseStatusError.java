@@ -26,6 +26,8 @@ public enum ResponseStatusError {
 
     //404 Not Found
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),
+    PROJECT_NOT_FOUND(404, "프로젝트 정보를 찾을 수 없습니다."),
+
 
     //500 Internal Server Error
     SERVER_ERROR(500, "서버 내부 오류가 발생했습니다.");

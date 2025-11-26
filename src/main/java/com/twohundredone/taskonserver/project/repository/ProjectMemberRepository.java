@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
+    List<ProjectMember> findAllByUser_UserId(Long userId);
 }

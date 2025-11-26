@@ -3,10 +3,7 @@ package com.twohundredone.taskonserver.project.controller;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
-import com.twohundredone.taskonserver.project.dto.ProjectCreateRequest;
-import com.twohundredone.taskonserver.project.dto.ProjectCreateResponse;
-import com.twohundredone.taskonserver.project.dto.ProjectSelectResponse;
-import com.twohundredone.taskonserver.project.dto.TaskListResponse;
+import com.twohundredone.taskonserver.project.dto.*;
 import com.twohundredone.taskonserver.project.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -41,5 +38,11 @@ public class ProjectController {
     public ResponseEntity<ApiResponse<List<TaskListResponse>>> getProjectList(@AuthenticationPrincipal CustomUserDetails userDetails){
         List<TaskListResponse> response = projectService.getProject(userDetails);
         return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_LIST, response));
+    }
+
+    @GetMapping("/{projectId}/sidebar")
+    public ResponseEntity<ApiResponse<SidebarInfoResponse>> getSidebarInfo(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
+        SidebarInfoResponse response = projectService.getSidebarInfo(userDetails, projectId);
+        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_SIDEBAR_INFO, response));
     }
 }

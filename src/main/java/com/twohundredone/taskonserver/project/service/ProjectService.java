@@ -3,10 +3,7 @@ package com.twohundredone.taskonserver.project.service;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import com.twohundredone.taskonserver.global.exception.CustomException;
-import com.twohundredone.taskonserver.project.dto.ProjectCreateRequest;
-import com.twohundredone.taskonserver.project.dto.ProjectCreateResponse;
-import com.twohundredone.taskonserver.project.dto.ProjectSelectResponse;
-import com.twohundredone.taskonserver.project.dto.TaskListResponse;
+import com.twohundredone.taskonserver.project.dto.*;
 import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.project.entity.ProjectMember;
 import com.twohundredone.taskonserver.project.enums.Role;
@@ -18,8 +15,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,11 +52,36 @@ public class ProjectService {
 
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
-        return projectRepository.findProjectWithMemberRole(projectId, userId);
+        Optional<ProjectSelectResponse> projectInfo = projectRepository.findProjectWithMemberRole(projectId, userId);
+        return projectInfo.orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
     }
 
     public List<TaskListResponse> getProject(CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
-        return projectRepository.findProjectListByUserId(userId);
+        List<TaskListResponse> taskListResponses = new ArrayList<>();
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
+        for(ProjectMember projectMember : projectMembers) {
+            List<Project> projects = projectRepository.findAllByProjectId(projectMember.getProject().getProjectId());
+            List<TaskListResponse> currentTaskResponse = projects.stream()
+                    .map(project -> new TaskListResponse(project.getProjectId(), project.getProjectName(), projectMember.getRole())).collect(Collectors.toList());
+            taskListResponses.addAll(currentTaskResponse);
+        }
+
+        return taskListResponses;
+    }
+
+    public SidebarInfoResponse getSidebarInfo(CustomUserDetails userDetails, Long projectId) {
+        Project requestProject = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        Long userId = userDetails.getId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
+
+        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder().id(projectId).name(requestProject.getProjectName()).build();
+
+        SidebarInfoResponse.OnlineUsersInfo onlineUsersInfo = SidebarInfoResponse.OnlineUsersInfo.builder()
+                .userId(userId).name(user.getName()).profileImageUrl(user.getProfileImageUrl()).isOnline(true).build();
+
+        List<SidebarInfoResponse.OnlineUsersInfo> onlineUsersInfoList = List.of(onlineUsersInfo);
+
+        return SidebarInfoResponse.builder().project(projectInfo).onlineUser(onlineUsersInfoList).build();
     }
 }
