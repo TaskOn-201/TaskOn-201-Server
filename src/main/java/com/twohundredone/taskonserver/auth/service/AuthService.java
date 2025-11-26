@@ -139,9 +139,9 @@ public class AuthService {
     }
 
     // 로그아웃(RefreshToken 제거)
-    public void logout(CustomUserDetails userDetails, HttpServletResponse response)  {
+    public void logout(Long userId, HttpServletResponse response)  {
         // 1) Refresh Token 삭제 (Redis)
-        refreshTokenService.delete(userDetails.getId());
+        refreshTokenService.delete(userId);
 
         // 2) Refresh Token Cookie 삭제
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
@@ -153,6 +153,6 @@ public class AuthService {
                 .build();
 
         response.addHeader("Set-Cookie", deleteCookie.toString());
-        onlineStatusService.setOffline(userDetails.getId());
+        onlineStatusService.setOffline(userId);
     }
 }

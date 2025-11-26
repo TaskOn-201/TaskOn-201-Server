@@ -40,7 +40,7 @@ public class AuthController {
 
     @Operation(summary = "회원가입", description = "회원가입 API")
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<SignUpResponse>> signup(@RequestBody @Valid SignUpRequest request) {
+    public ResponseEntity<ApiResponse<SignUpResponse>> signup(@Valid @RequestBody SignUpRequest request) {
         SignUpResponse response = authService.signUp(request);
         return ResponseEntity.ok(
                 ApiResponse.success(SIGNUP_SUCCESS, response)
@@ -97,7 +97,7 @@ public class AuthController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             HttpServletResponse response
     ) {
-        authService.logout(userDetails, response);
+        authService.logout(userDetails.getId(), response);
 
         return ResponseEntity.ok(
                 ApiResponse.success(SUCCESS_LOGOUT, null)
