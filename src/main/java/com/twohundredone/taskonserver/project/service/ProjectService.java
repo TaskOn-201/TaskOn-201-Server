@@ -27,7 +27,6 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
-    private final OAuth2UserService oAuth2UserService;
 
     @Transactional
     public ProjectCreateResponse createProject(ProjectCreateRequest projectCreateRequest, CustomUserDetails userDetails) {
@@ -54,8 +53,10 @@ public class ProjectService {
 
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
-        Optional<ProjectSelectResponse> projectInfo = projectRepository.findProjectWithMemberRole(projectId, userId);
-        return projectInfo.orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
+        ProjectMember projectMember = projectMembers.stream().filter(pm -> pm.getProject().getProjectId().equals(projectId)).findFirst().orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
+        return ProjectSelectResponse.builder().project(project).role(projectMember.getRole()).build();
     }
 
     public List<TaskListResponse> getProject(CustomUserDetails userDetails) {
