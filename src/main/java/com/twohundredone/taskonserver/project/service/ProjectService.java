@@ -88,7 +88,6 @@ public class ProjectService {
     }
 
     public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
-        Long userId = userDetails.getId();
         List<ProjectMemberListResponse> projectMemberListResponses = new ArrayList<>();
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
         for(ProjectMember projectMember : projectMembers) {
@@ -102,31 +101,25 @@ public class ProjectService {
     }
 
     public ProjectSettingsResponseInfo ProjectSettingsResponseInfo(CustomUserDetails userDetails, Long projectId) {
+        Long userId = userDetails.getId();
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
-
-        ProjectSettingsResponseInfo.Leader leader = null;
-        List<ProjectSettingsResponseInfo.Member> members  = new ArrayList<>();
-
-        List<ProjectMember> projectMembers =  projectMemberRepository.findAllByProject_ProjectId(projectId);
-
-        for(ProjectMember projectMember : projectMembers) {
-            User user = projectMember.getUser();
-
-            ProjectSettingsResponseInfo.Member currentMember =
-                    ProjectSettingsResponseInfo.Member.builder().userId(user.getUserId())
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+        ProjectSettingsResponseInfo.Leader leader = projectMembers.stream().filter(pm -> pm.getRole().equals(Role.LEADER)).findFirst()
+                .map(pm -> {
+                    User user = pm.getUser();
+                    return ProjectSettingsResponseInfo.Leader.builder().userId(user.getUserId())
                             .name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
+                }).orElseThrow(() -> new CustomException(ResponseStatusError.READER_NOT_FOUND));
 
-            members.add(currentMember);
+        List<ProjectSettingsResponseInfo.Member> members = projectMembers.stream()
+                .map(pm -> {
+                    User user = pm.getUser();
+                    return ProjectSettingsResponseInfo.Member.builder()
+                            .userId(user.getUserId()).name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
+                }).toList();
 
-            if(projectMember.getRole().equals(Role.LEADER)) {
-                leader = ProjectSettingsResponseInfo.Leader.builder().userId(user.getUserId())
-                        .name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
-            }}
-
-        return ProjectSettingsResponseInfo.builder().projectId(project.getProjectId()).projectName(project.getProjectName())
+        return ProjectSettingsResponseInfo.builder().projectId(projectId).projectName(project.getProjectName())
                 .leader(leader).member(members).build();
-
-        //TODO: stream 이용
     }
 
 
