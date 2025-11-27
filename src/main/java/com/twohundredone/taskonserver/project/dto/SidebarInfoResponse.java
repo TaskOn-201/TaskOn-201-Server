@@ -11,13 +11,13 @@ import java.util.List;
 @Builder
 public class SidebarInfoResponse {
     private ProjectInfo project;
-    private List<OnlineUsersInfo> onlineUser;
+    private List<OnlineUsersInfo> onlineUsers;
 
     @Getter
     @Builder
     public static class ProjectInfo {
-        private Long id;
-        private String name;
+        private Long projectId;
+        private String projectName;
     }
 
     @Getter

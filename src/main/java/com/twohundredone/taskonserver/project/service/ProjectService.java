@@ -78,14 +78,15 @@ public class ProjectService {
         Long userId = userDetails.getId();
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
 
-        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder().id(projectId).name(requestProject.getProjectName()).build();
+        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder().projectId(projectId).projectName(requestProject.getProjectName()).build();
 
         SidebarInfoResponse.OnlineUsersInfo onlineUsersInfo = SidebarInfoResponse.OnlineUsersInfo.builder()
                 .userId(userId).name(user.getName()).profileImageUrl(user.getProfileImageUrl()).isOnline(true).build();
 
         List<SidebarInfoResponse.OnlineUsersInfo> onlineUsersInfoList = List.of(onlineUsersInfo);
 
-        return SidebarInfoResponse.builder().project(projectInfo).onlineUser(onlineUsersInfoList).build();
+        return SidebarInfoResponse.builder().project(projectInfo).onlineUsers(
+                onlineUsersInfoList).build();
     }
 
     public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
@@ -133,6 +134,6 @@ public class ProjectService {
         {
             projectRepository.deleteById(projectId);
         }
-        return "";
+        return null;
     }
 }
