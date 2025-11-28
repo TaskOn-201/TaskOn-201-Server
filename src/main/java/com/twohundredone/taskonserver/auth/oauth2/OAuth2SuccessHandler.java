@@ -3,6 +3,7 @@ package com.twohundredone.taskonserver.auth.oauth2;
 import com.twohundredone.taskonserver.auth.jwt.JwtProvider;
 import com.twohundredone.taskonserver.auth.util.CookieUtil;
 import com.twohundredone.taskonserver.user.entity.User;
+import com.twohundredone.taskonserver.user.service.OnlineStatusService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final JwtProvider jwtProvider;
+    private final OnlineStatusService onlineStatusService;
 
     @Override
     public void onAuthenticationSuccess(
@@ -31,6 +33,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String refreshToken = jwtProvider.createRefreshToken(user.getUserId(), user.getEmail());
 
         CookieUtil.addRefreshTokenCookie(response, refreshToken);
+
+        onlineStatusService.setOnline(user.getUserId());
 
         String redirectUrl = "http://localhost:3000/oauth2/success?accessToken=" + accessToken;
 
