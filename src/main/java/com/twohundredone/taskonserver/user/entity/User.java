@@ -40,4 +40,16 @@ public class User {
 
     @Column(length = 100)
     private String providerUserId;
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateProfileImage(String imageUrl) {
+        this.profileImageUrl = imageUrl;
+    }
+
+    public void updatePassword(String password) {
+        this.password = password;
+    }
 }
