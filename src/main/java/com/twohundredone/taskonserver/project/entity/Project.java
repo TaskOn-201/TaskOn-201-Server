@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -30,10 +31,17 @@ public class Project extends BaseEntity {
     @Column(name = "descripton")
     private String projectDescription;
 
-    @OneToMany(mappedBy = "project", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private List<ProjectMember> members;
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @Builder.Default
+    List<ProjectMember> members = new ArrayList<>();
 
     public void addLeader(User user){
-        ProjectMember projectMember = ProjectMember.builder().project(this).user(user).role(Role.LEADER).build();
+        ProjectMember leader = ProjectMember.builder()
+                .project(this)
+                .user(user)
+                .role(Role.LEADER).build();
+        this.members.add(leader);
     }
 }

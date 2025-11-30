@@ -11,14 +11,14 @@ import lombok.Getter;
 @Getter
 @JsonPropertyOrder({ "projectId", "projectName", "projectDescription", "myRole" })
 public class ProjectSelectResponse {
-    private Long ProjectId;
+    private Long projectId;
     private String projectName;
     private String projectDescription;
     private Role myRole;
 
     @Builder
     public ProjectSelectResponse(Project project, Role role){
-        this.ProjectId = project.getProjectId();
+        this.projectId = project.getProjectId();
         this.projectName = project.getProjectName();
         this.projectDescription = project.getProjectDescription();
         this.myRole = role;

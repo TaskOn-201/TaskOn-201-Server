@@ -29,23 +29,21 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
 
     @Transactional
-    public ProjectCreateResponse createProject(ProjectCreateRequest projectCreateRequest, CustomUserDetails userDetails) {
+    public ProjectCreateResponse createProject(ProjectCreateRequest request, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
         User creator = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
 
         Project project = Project.builder()
-                .projectName(projectCreateRequest.projectName())
-                .projectDescription(projectCreateRequest.projectDescription())
+                .projectName(request.projectName())
+                .projectDescription(request.projectDescription())
                 .build();
+
         project.addLeader(creator);
 
         Project savedProject = projectRepository.save(project);
 
-        ProjectMember projectMember = ProjectMember.builder().project(savedProject).user(creator).role(Role.LEADER).build();
-        projectMemberRepository.save(projectMember);
-
         return ProjectCreateResponse.builder()
-                .projectId(project.getProjectId())
+                .projectId(savedProject.getProjectId())
                 .projectName(savedProject.getProjectName())
                 .projectDescription(savedProject.getProjectDescription())
                 .build();
@@ -53,6 +51,7 @@ public class ProjectService {
 
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
+
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
         ProjectMember projectMember = projectMembers.stream().filter(pm -> pm.getProject().getProjectId().equals(projectId)).findFirst().orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
