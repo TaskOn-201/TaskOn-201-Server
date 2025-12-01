@@ -28,8 +28,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectCreateResponse createProject(ProjectCreateRequest request, CustomUserDetails userDetails) {
-        Long userId = userDetails.getId();
-        User creator = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
+        User creator = userRepository.findById(userDetails.getId()).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
 
         Project project = Project.builder()
                 .projectName(request.projectName())
@@ -99,7 +98,7 @@ public class ProjectService {
                 }).toList();
 
         return SidebarInfoResponse.builder().project(projectInfo)
-                .onlineUsers(onlineUsers).build();
+                .onlineUsers(onlineUsers).unreadChatCount(5).build();
 
         //TODO: 채팅 관련 서비스 로직 추가 예정
     }
@@ -107,6 +106,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
         Long userId = userDetails.getId();
+
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
                 .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
 
