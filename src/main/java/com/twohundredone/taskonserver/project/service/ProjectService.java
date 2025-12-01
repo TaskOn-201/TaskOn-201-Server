@@ -11,6 +11,7 @@ import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
+import com.twohundredone.taskonserver.user.service.OnlineStatusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final OnlineStatusService onlineStatusService;
 
     @Transactional
     public ProjectCreateResponse createProject(ProjectCreateRequest request, CustomUserDetails userDetails) {
@@ -72,20 +74,35 @@ public class ProjectService {
                 )).toList();
     }
 
+    @Transactional(readOnly = true)
     public SidebarInfoResponse getSidebarInfo(CustomUserDetails userDetails, Long projectId) {
-        Project requestProject = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
         Long userId = userDetails.getId();
-        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
 
-        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder().projectId(projectId).projectName(requestProject.getProjectName()).build();
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
 
-        SidebarInfoResponse.OnlineUsersInfo onlineUsersInfo = SidebarInfoResponse.OnlineUsersInfo.builder()
-                .userId(userId).name(user.getName()).profileImageUrl(user.getProfileImageUrl()).isOnline(true).build();
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
 
-        List<SidebarInfoResponse.OnlineUsersInfo> onlineUsersInfoList = List.of(onlineUsersInfo);
+        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder()
+                .projectId(projectId).projectName(project.getProjectName()).build();
 
-        return SidebarInfoResponse.builder().project(projectInfo).onlineUsers(
-                onlineUsersInfoList).build();
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+
+        List<SidebarInfoResponse.OnlineUsersInfo> onlineUsers = projectMembers.stream()
+                .map(pm -> {
+                    User u = pm.getUser();
+                    return SidebarInfoResponse.OnlineUsersInfo.builder()
+                            .userId(u.getUserId())
+                            .name(u.getName())
+                            .profileImageUrl(u.getProfileImageUrl())
+                            .isOnline(onlineStatusService.isOnline(userId)).build();
+                }).toList();
+
+        return SidebarInfoResponse.builder().project(projectInfo)
+                .onlineUsers(onlineUsers).build();
+
+        //TODO: 채팅 관련 서비스 로직 추가 예정
     }
 
     public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
