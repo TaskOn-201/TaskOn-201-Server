@@ -11,15 +11,12 @@ import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
+import com.twohundredone.taskonserver.user.service.OnlineStatusService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,11 +24,11 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final OnlineStatusService onlineStatusService;
 
     @Transactional
     public ProjectCreateResponse createProject(ProjectCreateRequest request, CustomUserDetails userDetails) {
-        Long userId = userDetails.getId();
-        User creator = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
+        User creator = userRepository.findById(userDetails.getId()).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
 
         Project project = Project.builder()
                 .projectName(request.projectName())
@@ -49,90 +46,144 @@ public class ProjectService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
-        ProjectMember projectMember = projectMembers.stream().filter(pm -> pm.getProject().getProjectId().equals(projectId)).findFirst().orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+
+        ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
         return ProjectSelectResponse.builder().project(project).role(projectMember.getRole()).build();
     }
 
-    public List<TaskListResponse> getProject(CustomUserDetails userDetails) {
+    @Transactional(readOnly = true)
+    public List<ProjectListResponse> getProjectList(CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
-        List<TaskListResponse> taskListResponses = new ArrayList<>();
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
-        for(ProjectMember projectMember : projectMembers) {
-            List<Project> projects = projectRepository.findAllByProjectId(projectMember.getProject().getProjectId());
-            List<TaskListResponse> currentTaskResponse = projects.stream()
-                    .map(project -> new TaskListResponse(project.getProjectId(), project.getProjectName(), projectMember.getRole())).toList();
-            taskListResponses.addAll(currentTaskResponse);
-        }
 
-        return taskListResponses;
+        List<ProjectMember> memberships = projectMemberRepository.findAllByUser_UserId(userId);
+
+        return memberships.stream()
+                .map(pm -> new ProjectListResponse(
+                        pm.getProject().getProjectId(),
+                        pm.getProject().getProjectName(),
+                        pm.getRole()
+                )).toList();
     }
 
+    @Transactional(readOnly = true)
     public SidebarInfoResponse getSidebarInfo(CustomUserDetails userDetails, Long projectId) {
-        Project requestProject = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
         Long userId = userDetails.getId();
-        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
 
-        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder().projectId(projectId).projectName(requestProject.getProjectName()).build();
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
 
-        SidebarInfoResponse.OnlineUsersInfo onlineUsersInfo = SidebarInfoResponse.OnlineUsersInfo.builder()
-                .userId(userId).name(user.getName()).profileImageUrl(user.getProfileImageUrl()).isOnline(true).build();
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
 
-        List<SidebarInfoResponse.OnlineUsersInfo> onlineUsersInfoList = List.of(onlineUsersInfo);
+        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder()
+                .projectId(projectId).projectName(project.getProjectName()).build();
 
-        return SidebarInfoResponse.builder().project(projectInfo).onlineUsers(
-                onlineUsersInfoList).build();
-    }
-
-    public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
-        List<ProjectMemberListResponse> projectMemberListResponses = new ArrayList<>();
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
-        for(ProjectMember projectMember : projectMembers) {
-            List<User> users = userRepository.findAllByUserId(projectMember.getUser().getUserId());
-            List<ProjectMemberListResponse> currentprojectMemberList = users.stream()
-                    .map(user -> new ProjectMemberListResponse(user.getUserId(), user.getName(), user.getEmail(), user.getProfileImageUrl(), projectMember.getRole()))
-                    .toList();
-            projectMemberListResponses.addAll(currentprojectMemberList);
-        }
-        return  projectMemberListResponses;
+
+        List<SidebarInfoResponse.OnlineUsersInfo> onlineUsers = projectMembers.stream()
+                .map(pm -> {
+                    User u = pm.getUser();
+                    return SidebarInfoResponse.OnlineUsersInfo.builder()
+                            .userId(u.getUserId())
+                            .name(u.getName())
+                            .profileImageUrl(u.getProfileImageUrl())
+                            .isOnline(onlineStatusService.isOnline(userId)).build();
+                }).toList();
+
+        return SidebarInfoResponse.builder().project(projectInfo)
+                .onlineUsers(onlineUsers).unreadChatCount(5).build();
+
+        //TODO: 채팅 관련 서비스 로직 추가 예정
     }
 
+    @Transactional(readOnly = true)
+    public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
+        Long userId = userDetails.getId();
+
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+
+        return projectMembers.stream().map(pm -> {
+            User u = pm.getUser();
+            return new ProjectMemberListResponse(
+                    u.getUserId(),
+                    u.getName(),
+                    u.getEmail(),
+                    u.getProfileImageUrl(),
+                    pm.getRole()
+            );
+        }).toList();
+    }
+
+    @Transactional(readOnly = true)
     public ProjectSettingsResponseInfo ProjectSettingsResponseInfo(CustomUserDetails userDetails, Long projectId) {
         Long userId = userDetails.getId();
+
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
-        ProjectSettingsResponseInfo.Leader leader = projectMembers.stream().filter(pm -> pm.getRole().equals(Role.LEADER)).findFirst()
-                .map(pm -> {
-                    User user = pm.getUser();
-                    return ProjectSettingsResponseInfo.Leader.builder().userId(user.getUserId())
-                            .name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
-                }).orElseThrow(() -> new CustomException(ResponseStatusError.READER_NOT_FOUND));
+
+        ProjectMember leaderMember = projectMembers.stream()
+                .filter(pm -> pm.getRole().equals(Role.LEADER))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ResponseStatusError.LEADER_NOT_FOUND));
+
+        User leaderUser = leaderMember.getUser();
+
+        var leader = ProjectSettingsResponseInfo.Leader.builder()
+                .userId(leaderUser.getUserId())
+                .name(leaderUser.getName())
+                .profileImageUrl(leaderUser.getProfileImageUrl())
+                .build();
 
         List<ProjectSettingsResponseInfo.Member> members = projectMembers.stream()
+                .filter(pm -> pm.getRole().equals(Role.MEMBER))
                 .map(pm -> {
                     User user = pm.getUser();
                     return ProjectSettingsResponseInfo.Member.builder()
-                            .userId(user.getUserId()).name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
+                            .userId(user.getUserId())
+                            .name(user.getName())
+                            .profileImageUrl(user.getProfileImageUrl())
+                            .build();
                 }).toList();
 
-        return ProjectSettingsResponseInfo.builder().projectId(projectId).projectName(project.getProjectName())
-                .leader(leader).member(members).build();
+        return ProjectSettingsResponseInfo.builder()
+                .projectId(projectId)
+                .projectName(project.getProjectName())
+                .leader(leader)
+                .members(members)
+                .build();
     }
 
 
-    public String deleteProject(CustomUserDetails userDetails, Long projectId, ProjectDeleteRequest projectDeleteRequest) {
+    @Transactional
+    public void deleteProject(CustomUserDetails userDetails, Long projectId, ProjectDeleteRequest request) {
+        Long userId = userDetails.getId();
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
-        List<ProjectMember> projectMember = projectMemberRepository.findAllByProject_ProjectId(projectId);
-        Boolean user = projectMember.stream().map(pm -> pm.getRole().equals(Role.LEADER)).findFirst().orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
 
-        if (projectDeleteRequest.projectName().equals(project.getProjectName()) || user)
-        {
-            projectRepository.deleteById(projectId);
+        ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
+        if(projectMember.getRole() != Role.LEADER){
+            throw new CustomException(ResponseStatusError.LEADER_NOT_FOUND);
         }
-        return null;
+
+        if(!project.getProjectName().equals(request.projectName())){
+            throw new CustomException(ResponseStatusError.PROJECT_NAME_NOT_MATCH);
+        }
+
+        projectRepository.delete(project);
     }
 }

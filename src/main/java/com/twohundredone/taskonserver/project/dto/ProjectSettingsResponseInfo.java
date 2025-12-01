@@ -13,7 +13,7 @@ public class ProjectSettingsResponseInfo {
     private Long projectId;
     private String projectName;
     private Leader leader;
-    private List<Member> member;
+    private List<Member> members;
 
     @Getter
     @Builder

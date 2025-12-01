@@ -29,6 +29,6 @@ public class SidebarInfoResponse {
         private boolean isOnline;
     }
 
-    //TODO
+    //TODO: 읽지 않은 채팅 수 축가 예정
     Integer unreadChatCount;
 }
