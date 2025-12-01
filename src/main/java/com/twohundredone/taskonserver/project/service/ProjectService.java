@@ -58,18 +58,18 @@ public class ProjectService {
         return ProjectSelectResponse.builder().project(project).role(projectMember.getRole()).build();
     }
 
+    @Transactional(readOnly = true)
     public List<ProjectListResponse> getProjectList(CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
-        List<ProjectListResponse> taskListResponses = new ArrayList<>();
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
-        for(ProjectMember projectMember : projectMembers) {
-            List<Project> projects = projectRepository.findAllByProjectId(projectMember.getProject().getProjectId());
-            List<ProjectListResponse> currentTaskResponse = projects.stream()
-                    .map(project -> new ProjectListResponse(project.getProjectId(), project.getProjectName(), projectMember.getRole())).toList();
-            taskListResponses.addAll(currentTaskResponse);
-        }
 
-        return taskListResponses;
+        List<ProjectMember> memberships = projectMemberRepository.findAllByUser_UserId(userId);
+
+        return memberships.stream()
+                .map(pm -> new ProjectListResponse(
+                        pm.getProject().getProjectId(),
+                        pm.getProject().getProjectName(),
+                        pm.getRole()
+                )).toList();
     }
 
     public SidebarInfoResponse getSidebarInfo(CustomUserDetails userDetails, Long projectId) {
