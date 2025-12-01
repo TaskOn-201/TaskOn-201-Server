@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -136,15 +135,18 @@ public class ProjectService {
 
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
 
-        ProjectSettingsResponseInfo.Leader leader = projectMembers.stream()
-                .filter(pm -> pm.getRole().equals(Role.LEADER)).findFirst()
-                .map(pm -> {
-                    User user = pm.getUser();
-                    return ProjectSettingsResponseInfo.Leader.builder()
-                            .userId(user.getUserId())
-                            .name(user.getName())
-                            .profileImageUrl(user.getProfileImageUrl()).build();
-                }).orElseThrow(() -> new CustomException(ResponseStatusError.LEADER_NOT_FOUND));
+        ProjectMember leaderMember = projectMembers.stream()
+                .filter(pm -> pm.getRole().equals(Role.LEADER))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ResponseStatusError.LEADER_NOT_FOUND));
+
+        User leaderUser = leaderMember.getUser();
+
+        var leader = ProjectSettingsResponseInfo.Leader.builder()
+                .userId(leaderUser.getUserId())
+                .name(leaderUser.getName())
+                .profileImageUrl(leaderUser.getProfileImageUrl())
+                .build();
 
         List<ProjectSettingsResponseInfo.Member> members = projectMembers.stream()
                 .filter(pm -> pm.getRole().equals(Role.MEMBER))
