@@ -20,7 +20,8 @@ public enum ResponseStatusSuccess {
     EMAIL_AVAILABLE(200, "사용 가능한 이메일입니다."),
     TOKEN_REISSUE_SUCCESS(200, "토큰 재발급에 성공했습니다."),
     MODIFY_USER_INFO_SUCCESS(200, "사용자 정보 변경이 성공적으로 완료되었습니다."),
-    UPDATE_PASSWORD_SUCCESS(200, "비밀번호 변경이 성공적으로 완료되었습니다.");
+    UPDATE_PASSWORD_SUCCESS(200, "비밀번호 변경이 성공적으로 완료되었습니다."),
+    SEARCH_USER_SUCCESS(200, "검색어에 맞는 사용자가 검색되었습니다.");
 
     private final int statusCode;
     private final String message;
