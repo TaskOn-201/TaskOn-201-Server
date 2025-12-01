@@ -8,15 +8,12 @@ import com.twohundredone.taskonserver.project.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -41,8 +38,8 @@ public class ProjectController {
 
     @Operation(summary = "프로젝트 목록 조회", description = "프로젝트 목록 조회 API")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TaskListResponse>>> getProjectList(@AuthenticationPrincipal CustomUserDetails userDetails){
-        List<TaskListResponse> response = projectService.getProject(userDetails);
+    public ResponseEntity<ApiResponse<List<ProjectListResponse>>> getProjectList(@AuthenticationPrincipal CustomUserDetails userDetails){
+        List<ProjectListResponse> response = projectService.getProjectList(userDetails);
         return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_LIST, response));
     }
 

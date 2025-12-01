@@ -12,14 +12,11 @@ import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,23 +46,26 @@ public class ProjectService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
-        ProjectMember projectMember = projectMembers.stream().filter(pm -> pm.getProject().getProjectId().equals(projectId)).findFirst().orElseThrow(() -> new CustomException(ResponseStatusError.UNAUTHORIZED));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+
+        ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
         return ProjectSelectResponse.builder().project(project).role(projectMember.getRole()).build();
     }
 
-    public List<TaskListResponse> getProject(CustomUserDetails userDetails) {
+    public List<ProjectListResponse> getProjectList(CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
-        List<TaskListResponse> taskListResponses = new ArrayList<>();
+        List<ProjectListResponse> taskListResponses = new ArrayList<>();
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByUser_UserId(userId);
         for(ProjectMember projectMember : projectMembers) {
             List<Project> projects = projectRepository.findAllByProjectId(projectMember.getProject().getProjectId());
-            List<TaskListResponse> currentTaskResponse = projects.stream()
-                    .map(project -> new TaskListResponse(project.getProjectId(), project.getProjectName(), projectMember.getRole())).toList();
+            List<ProjectListResponse> currentTaskResponse = projects.stream()
+                    .map(project -> new ProjectListResponse(project.getProjectId(), project.getProjectName(), projectMember.getRole())).toList();
             taskListResponses.addAll(currentTaskResponse);
         }
 
