@@ -66,8 +66,8 @@ public class ProjectController {
 
     @Operation(summary = "프로젝트 삭제", description = "프로젝트 삭제 API")
     @DeleteMapping("{projectId}")
-    public ResponseEntity<ApiResponse<String>> deleteProject(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId, @RequestBody ProjectDeleteRequest projectDeleteRequest){
-        String response = projectService.deleteProject(userDetails, projectId, projectDeleteRequest);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.DELETE_PROJECT, response));
+    public ResponseEntity<ApiResponse<Void>> deleteProject(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId, @Valid @RequestBody ProjectDeleteRequest projectDeleteRequest){
+        projectService.deleteProject(userDetails, projectId, projectDeleteRequest);
+        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.DELETE_PROJECT, null));
     }
 }

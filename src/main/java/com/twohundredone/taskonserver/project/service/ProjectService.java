@@ -166,15 +166,22 @@ public class ProjectService {
     }
 
 
-    public String deleteProject(CustomUserDetails userDetails, Long projectId, ProjectDeleteRequest projectDeleteRequest) {
+    @Transactional
+    public void deleteProject(CustomUserDetails userDetails, Long projectId, ProjectDeleteRequest request) {
+        Long userId = userDetails.getId();
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
-        List<ProjectMember> projectMember = projectMemberRepository.findAllByProject_ProjectId(projectId);
-        Boolean user = projectMember.stream().map(pm -> pm.getRole().equals(Role.LEADER)).findFirst().orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
 
-        if (projectDeleteRequest.projectName().equals(project.getProjectName()) || user)
-        {
-            projectRepository.deleteById(projectId);
+        ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
+        if(projectMember.getRole() != Role.LEADER){
+            throw new CustomException(ResponseStatusError.LEADER_NOT_FOUND);
         }
-        return null;
+
+        if(!project.getProjectName().equals(request.projectName())){
+            throw new CustomException(ResponseStatusError.PROJECT_NAME_NOT_MATCH);
+        }
+
+        projectRepository.delete(project);
     }
 }

@@ -16,6 +16,7 @@ public enum ResponseStatusError {
     FILE_EMPTY(400, "파일이 비어 있습니다."),
     FILE_TOO_LARGE(400, "파일 용량은 10MB 이하여야 합니다."),
     UNSUPPORTED_FILE_EXTENSION(400, "지원하지 않는 파일 형식입니다."),
+    PROJECT_NAME_NOT_MATCH(400, "프로젝트명이 일치하지 않습니다."),
 
     //401 Unauthorized
     PASSWORD_INCORRECT(401, "비밀번호를 확인해주세요."),
@@ -27,6 +28,7 @@ public enum ResponseStatusError {
     //403 Forbidden
     FORBIDDEN(403, "접근 권한이 없습니다."),
     PROJECT_FORBIDDEN(403, "해당 프로젝트에 대한 접근 권한이 없습니다."),
+    ONLY_LEADER_CAN_DELETE(403, "프로젝트 삭제는 리더만 가능합니다."),
 
     //404 Not Found
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),
