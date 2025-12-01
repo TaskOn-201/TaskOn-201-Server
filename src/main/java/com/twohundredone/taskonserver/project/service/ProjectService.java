@@ -105,39 +105,64 @@ public class ProjectService {
         //TODO: 채팅 관련 서비스 로직 추가 예정
     }
 
+    @Transactional(readOnly = true)
     public List<ProjectMemberListResponse> getProjectMemberList(CustomUserDetails userDetails, Long projectId) {
-        List<ProjectMemberListResponse> projectMemberListResponses = new ArrayList<>();
+        Long userId = userDetails.getId();
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
-        for(ProjectMember projectMember : projectMembers) {
-            List<User> users = userRepository.findAllByUserId(projectMember.getUser().getUserId());
-            List<ProjectMemberListResponse> currentprojectMemberList = users.stream()
-                    .map(user -> new ProjectMemberListResponse(user.getUserId(), user.getName(), user.getEmail(), user.getProfileImageUrl(), projectMember.getRole()))
-                    .toList();
-            projectMemberListResponses.addAll(currentprojectMemberList);
-        }
-        return  projectMemberListResponses;
+
+        return projectMembers.stream().map(pm -> {
+            User u = pm.getUser();
+            return new ProjectMemberListResponse(
+                    u.getUserId(),
+                    u.getName(),
+                    u.getEmail(),
+                    u.getProfileImageUrl(),
+                    pm.getRole()
+            );
+        }).toList();
     }
 
+    @Transactional(readOnly = true)
     public ProjectSettingsResponseInfo ProjectSettingsResponseInfo(CustomUserDetails userDetails, Long projectId) {
         Long userId = userDetails.getId();
+
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
-        ProjectSettingsResponseInfo.Leader leader = projectMembers.stream().filter(pm -> pm.getRole().equals(Role.LEADER)).findFirst()
+
+        ProjectSettingsResponseInfo.Leader leader = projectMembers.stream()
+                .filter(pm -> pm.getRole().equals(Role.LEADER)).findFirst()
                 .map(pm -> {
                     User user = pm.getUser();
-                    return ProjectSettingsResponseInfo.Leader.builder().userId(user.getUserId())
-                            .name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
-                }).orElseThrow(() -> new CustomException(ResponseStatusError.READER_NOT_FOUND));
+                    return ProjectSettingsResponseInfo.Leader.builder()
+                            .userId(user.getUserId())
+                            .name(user.getName())
+                            .profileImageUrl(user.getProfileImageUrl()).build();
+                }).orElseThrow(() -> new CustomException(ResponseStatusError.LEADER_NOT_FOUND));
 
         List<ProjectSettingsResponseInfo.Member> members = projectMembers.stream()
+                .filter(pm -> pm.getRole().equals(Role.MEMBER))
                 .map(pm -> {
                     User user = pm.getUser();
                     return ProjectSettingsResponseInfo.Member.builder()
-                            .userId(user.getUserId()).name(user.getName()).profileImageUrl(user.getProfileImageUrl()).build();
+                            .userId(user.getUserId())
+                            .name(user.getName())
+                            .profileImageUrl(user.getProfileImageUrl())
+                            .build();
                 }).toList();
 
-        return ProjectSettingsResponseInfo.builder().projectId(projectId).projectName(project.getProjectName())
-                .leader(leader).member(members).build();
+        return ProjectSettingsResponseInfo.builder()
+                .projectId(projectId)
+                .projectName(project.getProjectName())
+                .leader(leader)
+                .members(members)
+                .build();
     }
 
 

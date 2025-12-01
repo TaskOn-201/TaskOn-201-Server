@@ -31,7 +31,7 @@ public enum ResponseStatusError {
     //404 Not Found
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),
     PROJECT_NOT_FOUND(404, "프로젝트 정보를 찾을 수 없습니다."),
-    READER_NOT_FOUND(404, "리더를 찾을 수 없습니다"),
+    LEADER_NOT_FOUND(404, "리더를 찾을 수 없습니다"),
 
 
     //500 Internal Server Error
