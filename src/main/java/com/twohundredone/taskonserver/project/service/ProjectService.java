@@ -94,7 +94,7 @@ public class ProjectService {
                             .userId(u.getUserId())
                             .name(u.getName())
                             .profileImageUrl(u.getProfileImageUrl())
-                            .isOnline(onlineStatusService.isOnline(userId)).build();
+                            .isOnline(onlineStatusService.isOnline(u.getUserId())).build();
                 }).toList();
 
         return SidebarInfoResponse.builder().project(projectInfo)
@@ -177,7 +177,7 @@ public class ProjectService {
                 .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
 
         if(projectMember.getRole() != Role.LEADER){
-            throw new CustomException(ResponseStatusError.LEADER_NOT_FOUND);
+            throw new CustomException(ResponseStatusError.FORBIDDEN);
         }
 
         if(!project.getProjectName().equals(request.projectName())){

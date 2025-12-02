@@ -17,6 +17,8 @@ public enum ResponseStatusError {
     FILE_TOO_LARGE(400, "파일 용량은 10MB 이하여야 합니다."),
     UNSUPPORTED_FILE_EXTENSION(400, "지원하지 않는 파일 형식입니다."),
     PROJECT_NAME_NOT_MATCH(400, "프로젝트명이 일치하지 않습니다."),
+    NOT_PROJECT_MEMBER(400, "해당 사용자는 프로젝트 멤버가 아닙니다."),
+    CANNOT_REMOVE_LEADER(400, "프로젝트 리더는 삭제할 수 없습니다."),
 
     //401 Unauthorized
     PASSWORD_INCORRECT(401, "비밀번호를 확인해주세요."),

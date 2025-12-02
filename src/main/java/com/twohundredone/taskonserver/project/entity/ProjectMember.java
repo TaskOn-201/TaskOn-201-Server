@@ -32,4 +32,12 @@ public class ProjectMember extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    public static ProjectMember create(Project project, User user) {
+        ProjectMember projectMember = new ProjectMember();
+        projectMember.project = project;
+        projectMember.user = user;
+        projectMember.role = Role.MEMBER; // 기본 초대는 MEMBER
+        return projectMember;
+    }
 }
