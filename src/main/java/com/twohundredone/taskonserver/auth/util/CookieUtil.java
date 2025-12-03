@@ -15,6 +15,7 @@ public class CookieUtil {
                 .secure(true)
                 .sameSite("None")
                 .path("/")
+                .domain(".taskon.co.kr")
                 .maxAge(60 * 60 * 24 * 14) // 14일
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
