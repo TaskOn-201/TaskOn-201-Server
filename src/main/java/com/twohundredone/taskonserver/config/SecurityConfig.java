@@ -108,9 +108,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         // TODO: 실제 배포 시에는 프론트 도메인만 허용하도록 변경해야 함
         config.setAllowedOriginPatterns(List.of(
+                "https://api.taskon.co.kr",
                 "https://taskon.co.kr",
                 "https://www.taskon.co.kr",
-                "https://task-on-201-client.vercel.app",
                 "http://localhost:*"
         ));
 
