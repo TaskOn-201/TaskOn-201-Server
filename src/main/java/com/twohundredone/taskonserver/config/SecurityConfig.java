@@ -110,6 +110,7 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of(
                 "https://taskon.co.kr",
                 "https://www.taskon.co.kr",
+                "https://task-on-201-client-jm2q5vvna-minkis-projects.vercel.app",
                 "http://localhost:*"
         ));
 
