@@ -107,7 +107,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         // TODO: 실제 배포 시에는 프론트 도메인만 허용하도록 변경해야 함
-        config.setAllowedOrigins(List.of("http://localhost:8080","http://localhost:3000", "http://localhost:5173"));
+        config.setAllowedOriginPatterns(List.of(
+                "https://taskon.co.kr",
+                "https://www.taskon.co.kr",
+                "http://localhost:*"
+        ));
+
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
