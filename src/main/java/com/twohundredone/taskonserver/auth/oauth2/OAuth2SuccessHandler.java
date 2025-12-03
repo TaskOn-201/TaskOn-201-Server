@@ -32,7 +32,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = jwtProvider.createAccessToken(user.getUserId(), user.getEmail());
         String refreshToken = jwtProvider.createRefreshToken(user.getUserId(), user.getEmail());
 
-        CookieUtil.addRefreshTokenCookie(response, refreshToken);
+        CookieUtil.addRefreshTokenCookie(request, response, refreshToken);
 
         onlineStatusService.setOnline(user.getUserId());
 

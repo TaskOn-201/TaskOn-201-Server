@@ -69,7 +69,8 @@ public class AuthService {
     }
 
     @Transactional
-    public LoginResponse  login(LoginRequest request, HttpServletResponse response) {
+    public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
+
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
 
@@ -80,15 +81,13 @@ public class AuthService {
         String accessToken = jwtProvider.createAccessToken(user.getUserId(), user.getEmail());
         String refreshToken = jwtProvider.createRefreshToken(user.getUserId(), user.getEmail());
 
-        // Redis에 RefreshToken 저장
         refreshTokenService.save(
                 user.getUserId(),
                 refreshToken,
-                jwtProvider.getRefreshTokenValidity() // TTL(ms)
+                jwtProvider.getRefreshTokenValidity()
         );
 
-        // RefreshToken → Cookie 저장
-        CookieUtil.addRefreshTokenCookie(response, refreshToken);
+        CookieUtil.addRefreshTokenCookie(httpRequest, response, refreshToken);
 
         onlineStatusService.setOnline(user.getUserId());
 
@@ -104,36 +103,32 @@ public class AuthService {
     }
 
     public ReissueResponse reissue(HttpServletRequest request, HttpServletResponse response) {
+
         String refreshToken = CookieUtil.getRefreshTokenFromCookie(request);
         if (refreshToken == null) {
             throw new CustomException(REFRESH_TOKEN_NOT_FOUND);
         }
 
-        // RefreshToken 유효성 검증
         jwtProvider.validateToken(refreshToken);
 
         Long userId = jwtProvider.getUserId(refreshToken);
 
-        // Redis에서 RefreshToken 조회
         String storedToken = refreshTokenService.get(userId);
         if (storedToken == null || !storedToken.equals(refreshToken)) {
             throw new CustomException(INVALID_REFRESH_TOKEN);
         }
 
-        // AccessToken과 RefreshToken 재발급
         String email = jwtProvider.getEmail(refreshToken);
         String newAccess = jwtProvider.createAccessToken(userId, email);
         String newRefresh = jwtProvider.createRefreshToken(userId, email);
 
-        // Redis에 RefreshToken 갱신 저장 (TTL 그대로 유지)
         refreshTokenService.save(
                 userId,
                 newRefresh,
                 jwtProvider.getRefreshTokenValidity()
         );
 
-        // 쿠키 재설정
-        CookieUtil.addRefreshTokenCookie(response, newRefresh);
+        CookieUtil.addRefreshTokenCookie(request, response, newRefresh);
 
         return new ReissueResponse(newAccess);
     }
