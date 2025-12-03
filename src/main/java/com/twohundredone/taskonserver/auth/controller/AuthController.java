@@ -62,9 +62,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse response
     ) {
-        LoginResponse loginResponse = authService.login(request, response);
+        LoginResponse loginResponse = authService.login(request, httpRequest, response);
 
         return ResponseEntity.ok(
                 ApiResponse.success(ResponseStatusSuccess.LOGIN_SUCCESS, loginResponse)

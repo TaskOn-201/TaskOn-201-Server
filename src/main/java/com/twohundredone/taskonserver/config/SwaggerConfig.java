@@ -31,14 +31,14 @@ import org.springframework.context.annotation.Configuration;
 )
 public class SwaggerConfig {
 
-        // Swagger 서버 주소 자동 감지 설정
         @Bean
         public OpenAPI customOpenAPI() {
                 return new OpenAPI()
-                        .addServersItem(new Server().url("https://api.taskon.co.kr"))
+                        .addServersItem(new Server().url("/"))
                         .info(new Info()
                                 .title("TaskOn API 명세서")
                                 .version("v1")
                                 .description("TaskOn 프로젝트 API 문서입니다."));
         }
 }
+

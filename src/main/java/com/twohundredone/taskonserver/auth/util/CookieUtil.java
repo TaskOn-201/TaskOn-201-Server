@@ -9,16 +9,34 @@ public class CookieUtil {
     public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
     // RefreshToken 쿠키 저장
-    public static void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
+    public static void addRefreshTokenCookie(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String refreshToken
+    ) {
+        boolean isLocal = request.getServerName().contains("localhost");
+
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie
+                .from(REFRESH_TOKEN_COOKIE, refreshToken)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
                 .path("/")
-                .domain(".taskon.co.kr")
-                .maxAge(60 * 60 * 24 * 14) // 14일
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
+                .maxAge(60 * 60 * 24 * 14);
+
+        if (isLocal) {
+            // 🔥 로컬테스트용
+            cookieBuilder
+                    .secure(false)
+                    .sameSite("Lax") // localhost에서는 None 불가
+                    .domain(null);
+        } else {
+            // 🔥 실제 배포(api.taskon.co.kr)
+            cookieBuilder
+                    .secure(true)
+                    .sameSite("None")
+                    .domain(".taskon.co.kr"); // 모든 서브도메인 허용
+        }
+
+        response.addHeader("Set-Cookie", cookieBuilder.build().toString());
     }
 
     // RefreshToken 쿠키 읽기
