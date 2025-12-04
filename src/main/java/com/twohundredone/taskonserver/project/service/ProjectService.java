@@ -62,7 +62,7 @@ public class ProjectService {
     public List<ProjectListResponse> getProjectList(CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
-        List<ProjectMember> memberships = projectMemberRepository.findAllByUser_UserId(userId);
+        List<ProjectMember> memberships = projectMemberRepository.findAllWithProjectByUserId(userId);
 
         return memberships.stream()
                 .map(pm -> new ProjectListResponse(
@@ -85,7 +85,7 @@ public class ProjectService {
         SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder()
                 .projectId(projectId).projectName(project.getProjectName()).build();
 
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllWithUserByProjectId(projectId);
 
         List<SidebarInfoResponse.OnlineUsersInfo> onlineUsers = projectMembers.stream()
                 .map(pm -> {
@@ -110,7 +110,7 @@ public class ProjectService {
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
                 .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
 
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllWithUserByProjectId(projectId);
 
         return projectMembers.stream().map(pm -> {
             User u = pm.getUser();
@@ -133,7 +133,7 @@ public class ProjectService {
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
                 .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
 
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+        List<ProjectMember> projectMembers = projectMemberRepository.findAllWithUserByProjectId(projectId);
 
         ProjectMember leaderMember = projectMembers.stream()
                 .filter(pm -> pm.getRole().equals(Role.LEADER))
