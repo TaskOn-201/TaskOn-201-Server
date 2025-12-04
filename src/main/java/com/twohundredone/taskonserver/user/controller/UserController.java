@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,8 +43,8 @@ public class UserController {
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage,
-            @Valid @RequestPart(value = "request") UserProfileUpdateRequest request
+            @Valid @ModelAttribute UserProfileUpdateRequest request,
+            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     ) {
         UserProfileResponse response = userService.updateProfile(userDetails.getId(), request, profileImage);
         return ResponseEntity.ok(
