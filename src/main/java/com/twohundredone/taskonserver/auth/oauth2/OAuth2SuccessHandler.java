@@ -36,7 +36,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         onlineStatusService.setOnline(user.getUserId());
 
-        String redirectUrl = "https://taskon.co.kr/oauth2/success?accessToken=" + accessToken;
+        String redirectUrl = "http://localhost:3000/oauth2/success?accessToken=" + accessToken;
 
         try {
             response.sendRedirect(redirectUrl);

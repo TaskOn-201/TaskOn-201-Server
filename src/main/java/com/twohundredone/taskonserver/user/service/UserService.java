@@ -13,6 +13,7 @@ import com.twohundredone.taskonserver.user.dto.UserProfileUpdateRequest;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -31,7 +33,12 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
 
-        user.updateName(request.name());
+        log.info(">>> request.name = {}", request.getName());
+
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            user.updateName(request.getName());
+        }
 
         if (profileImage != null && !profileImage.isEmpty()) {
             FileValidator.validateImage(profileImage);
