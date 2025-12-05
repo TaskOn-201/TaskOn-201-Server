@@ -9,7 +9,7 @@ import java.util.Set;
 import org.springframework.web.multipart.MultipartFile;
 
 public final class FileValidator {
-    private static final long MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024L; // 10MB
+    private static final long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024L; // 5MB
     private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of(
             "jpg", "jpeg", "png", "webp"
     );
