@@ -1,11 +1,13 @@
 package com.twohundredone.taskonserver.user.controller;
 
-import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.MODIFY_USER_INFO_SUCCESS;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_MY_INFO;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.MODIFY_MY_INFO_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.SELECTED_USER_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.UPDATE_PASSWORD_SUCCESS;
 
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
+import com.twohundredone.taskonserver.user.dto.UserMeResponse;
 import com.twohundredone.taskonserver.user.dto.UserPasswordUpdateRequest;
 import com.twohundredone.taskonserver.user.dto.UserProfileResponse;
 import com.twohundredone.taskonserver.user.dto.UserProfileUpdateRequest;
@@ -38,7 +40,7 @@ public class UserController {
     private final UserService userService;
     private final UserSearchService userSearchService;
 
-    @Operation(summary = "사용자 정보 변경", description = "사용자 정보 변경 API")
+    @Operation(summary = "내 정보 변경", description = "내 정보 변경 API")
     @SecurityRequirement(name = "Authorization")
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
@@ -48,9 +50,20 @@ public class UserController {
     ) {
         UserProfileResponse response = userService.updateProfile(userDetails.getId(), request, profileImage);
         return ResponseEntity.ok(
-            ApiResponse.success(MODIFY_USER_INFO_SUCCESS, response)
+            ApiResponse.success(MODIFY_MY_INFO_SUCCESS, response)
         );
     }
+
+    @Operation(summary = "내 정보 조회", description = "내 정보 조회 API")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserMeResponse>> getMyInfo(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        UserMeResponse response = userService.getMyInfo(userDetails.getId());
+        return ResponseEntity.ok(ApiResponse.success(GET_MY_INFO, response));
+    }
+
 
     @Operation(summary = "비밀번호 변경", description = "비밀번호 변경 API")
     @SecurityRequirement(name = "Authorization")
