@@ -18,6 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.*;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.FORBIDDEN;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_NAME_NOT_MATCH;
+
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
@@ -50,10 +54,10 @@ public class ProjectService {
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
 
         ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         return ProjectSelectResponse.builder().project(project).role(projectMember.getRole()).build();
     }
@@ -77,10 +81,10 @@ public class ProjectService {
         Long userId = userDetails.getId();
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
 
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder()
                 .projectId(projectId).projectName(project.getProjectName()).build();
@@ -108,7 +112,7 @@ public class ProjectService {
         Long userId = userDetails.getId();
 
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         List<ProjectMember> projectMembers = projectMemberRepository.findAllWithUserByProjectId(projectId);
 
@@ -128,17 +132,17 @@ public class ProjectService {
     public ProjectSettingsResponseInfo ProjectSettingsResponseInfo(CustomUserDetails userDetails, Long projectId) {
         Long userId = userDetails.getId();
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
 
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         List<ProjectMember> projectMembers = projectMemberRepository.findAllWithUserByProjectId(projectId);
 
         ProjectMember leaderMember = projectMembers.stream()
                 .filter(pm -> pm.getRole().equals(Role.LEADER))
                 .findFirst()
-                .orElseThrow(() -> new CustomException(ResponseStatusError.LEADER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(LEADER_NOT_FOUND));
 
         User leaderUser = leaderMember.getUser();
 
@@ -171,17 +175,17 @@ public class ProjectService {
     @Transactional
     public void deleteProject(CustomUserDetails userDetails, Long projectId, ProjectDeleteRequest request) {
         Long userId = userDetails.getId();
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
 
         ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         if(projectMember.getRole() != Role.LEADER){
-            throw new CustomException(ResponseStatusError.FORBIDDEN);
+            throw new CustomException(FORBIDDEN);
         }
 
         if(!project.getProjectName().equals(request.projectName())){
-            throw new CustomException(ResponseStatusError.PROJECT_NAME_NOT_MATCH);
+            throw new CustomException(PROJECT_NAME_NOT_MATCH);
         }
 
         projectRepository.delete(project);

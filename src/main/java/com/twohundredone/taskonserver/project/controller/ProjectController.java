@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.*;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_PROJECT_LIST;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_SIDEBAR_INFO;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.PROJECT_CREATE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.PROJECT_SELECT;
+
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
@@ -26,48 +32,48 @@ public class ProjectController {
     public ResponseEntity<ApiResponse<ProjectCreateResponse>> createProject
             (@Valid @RequestBody ProjectCreateRequest projectCreateRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
         ProjectCreateResponse response = projectService.createProject(projectCreateRequest, userDetails);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(ResponseStatusSuccess.PROJECT_CREATE, response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(PROJECT_CREATE, response));
     }
 
     @Operation(summary = "프로젝트 선택", description = "프로젝트 선택 API")
     @GetMapping("/{projectId}")
     public ResponseEntity<ApiResponse<ProjectSelectResponse>> selectProject(@PathVariable Long projectId, @AuthenticationPrincipal CustomUserDetails userDetails){
         ProjectSelectResponse response = projectService.selectProject(projectId, userDetails);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.PROJECT_SELECT, response));
+        return ResponseEntity.ok(ApiResponse.success(PROJECT_SELECT, response));
     }
 
     @Operation(summary = "프로젝트 목록 조회", description = "프로젝트 목록 조회 API")
     @GetMapping
     public ResponseEntity<ApiResponse<List<ProjectListResponse>>> getProjectList(@AuthenticationPrincipal CustomUserDetails userDetails){
         List<ProjectListResponse> response = projectService.getProjectList(userDetails);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_LIST, response));
+        return ResponseEntity.ok(ApiResponse.success(GET_PROJECT_LIST, response));
     }
 
     @Operation(summary = "프로젝트 사이드바 정보", description = "프로젝트 사이드바 정보 API")
     @GetMapping("/{projectId}/sidebar")
     public ResponseEntity<ApiResponse<SidebarInfoResponse>> getSidebarInfo(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
         SidebarInfoResponse response = projectService.getSidebarInfo(userDetails, projectId);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_SIDEBAR_INFO, response));
+        return ResponseEntity.ok(ApiResponse.success(GET_SIDEBAR_INFO, response));
     }
 
     @Operation(summary = "프로젝트 팀원 리스트 조회", description = "프로젝트 팀원 리스트 조회 API")
     @GetMapping("/{projectId}/members")
     public ResponseEntity<ApiResponse<List<ProjectMemberListResponse>>> getProjectMemberList(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
         List<ProjectMemberListResponse> responses = projectService.getProjectMemberList(userDetails, projectId);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_MEMBER, responses));
+        return ResponseEntity.ok(ApiResponse.success(GET_PROJECT_MEMBER, responses));
     }
 
     @Operation(summary = "프로젝트 설정 정보 조회", description = "프로젝트 설정 정보 조회 API")
     @GetMapping("/{projectId}/settings")
     public ResponseEntity<ApiResponse<ProjectSettingsResponseInfo>> getProjectSettingsInfo(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
         ProjectSettingsResponseInfo response = projectService.ProjectSettingsResponseInfo(userDetails, projectId);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.GET_PROJECT_SETTINGS, response));
+        return ResponseEntity.ok(ApiResponse.success(GET_PROJECT_SETTINGS, response));
     }
 
     @Operation(summary = "프로젝트 삭제", description = "프로젝트 삭제 API")
     @DeleteMapping("{projectId}")
     public ResponseEntity<ApiResponse<Void>> deleteProject(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId, @Valid @RequestBody ProjectDeleteRequest request){
         projectService.deleteProject(userDetails, projectId, request);
-        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.DELETE_PROJECT, null));
+        return ResponseEntity.ok(ApiResponse.success(DELETE_PROJECT, null));
     }
 }
