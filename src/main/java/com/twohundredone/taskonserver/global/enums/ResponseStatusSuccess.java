@@ -7,15 +7,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ResponseStatusSuccess {
 
-    PROJECT_CREATE(201, "프로젝트 생성 완료"),
-    PROJECT_SELECT(200, "프로젝트 선택 완료"),
-    GET_PROJECT_LIST(200, "프로젝트 목록 조회 성공"),
-    GET_SIDEBAR_INFO(200, "사이드바 정보 조회 성공"),
-    GET_PROJECT_MEMBER(200, "프로젝트 팀원 조회 성공"),
-    GET_PROJECT_SETTINGS(200, "프로젝트 설정 조회 성공"),
-    DELETE_PROJECT(200, "프로젝트 삭제 완료"),
-    SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),
-    ADD_PROJECT_MEMBER_SUCCESS(201, "프로젝트에 팀원을 성공적으로 추가하였습니다."),
+    //200
+    PROJECT_SELECT(200, "프로젝트를 선택했습니다."),
+    GET_PROJECT_LIST(200, "프로젝트 목록을 가져왔습니다."),
+    GET_SIDEBAR_INFO(200, "사이드바 정보를 조회했습니다."),
+    GET_PROJECT_MEMBER(200, "프로젝트 팀원을 조회했습니다."),
+    GET_PROJECT_SETTINGS(200, "프로젝트 설정을 가져왔습니다."),
+    DELETE_PROJECT(200, "프로젝트 삭제를 완료했습니다."),
     LOGIN_SUCCESS(200, "로그인되었습니다."),
     SUCCESS_LOGOUT(200, "로그아웃되었습니다."),
     EMAIL_AVAILABLE(200, "사용 가능한 이메일입니다."),
@@ -26,7 +24,13 @@ public enum ResponseStatusSuccess {
     NO_NEW_TEAM_MEMBER(200, "추가할 팀원이 없습니다. 모두 이미 프로젝트 멤버입니다."),
     SELECTED_USER_SUCCESS(200, "선택된 사용자를 조회하였습니다."),
     DELETE_PROJECT_MEMBER_SUCCESS(200, "프로젝트 팀원 삭제 성공"),
-    TASK_CREATE_SUCCESS(200, "Task 생성 완료");
+
+    //201 Created
+    SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),
+    PROJECT_CREATE(201, "프로젝트 생성을 완료했습니다."),
+    ADD_PROJECT_MEMBER_SUCCESS(201, "프로젝트에 팀원을 추가하였습니다."),
+    TASK_CREATE(201, "업무 생성을 완료했습니다.");
+
     private final int statusCode;
 
     private final String message;

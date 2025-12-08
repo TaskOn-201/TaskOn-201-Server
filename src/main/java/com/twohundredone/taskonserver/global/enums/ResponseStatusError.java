@@ -19,6 +19,7 @@ public enum ResponseStatusError {
     PROJECT_NAME_NOT_MATCH(400, "프로젝트명이 일치하지 않습니다."),
     NOT_PROJECT_MEMBER(400, "해당 사용자는 프로젝트 멤버가 아닙니다."),
     CANNOT_REMOVE_LEADER(400, "프로젝트 리더는 삭제할 수 없습니다."),
+    INVALID_DATE_RANGE(400, "시작일은 마감일보다 이후일 수 없습니다."),
 
     //401 Unauthorized
     PASSWORD_INCORRECT(401, "비밀번호를 확인해주세요."),
