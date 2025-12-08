@@ -6,6 +6,7 @@ import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.project.dto.*;
 import com.twohundredone.taskonserver.project.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @Operation(summary = "프로젝트 생성", description = "프로젝트 생성 API")
+    @SecurityRequirement(name = "Authorization")
     @PostMapping
     public ResponseEntity<ApiResponse<ProjectCreateResponse>> createProject
             (@Valid @RequestBody ProjectCreateRequest projectCreateRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -30,6 +32,7 @@ public class ProjectController {
     }
 
     @Operation(summary = "프로젝트 선택", description = "프로젝트 선택 API")
+    @SecurityRequirement(name = "Authorization")
     @GetMapping("/{projectId}")
     public ResponseEntity<ApiResponse<ProjectSelectResponse>> selectProject(@PathVariable Long projectId, @AuthenticationPrincipal CustomUserDetails userDetails){
         ProjectSelectResponse response = projectService.selectProject(projectId, userDetails);
@@ -37,6 +40,7 @@ public class ProjectController {
     }
 
     @Operation(summary = "프로젝트 목록 조회", description = "프로젝트 목록 조회 API")
+    @SecurityRequirement(name = "Authorization")
     @GetMapping
     public ResponseEntity<ApiResponse<List<ProjectListResponse>>> getProjectList(@AuthenticationPrincipal CustomUserDetails userDetails){
         List<ProjectListResponse> response = projectService.getProjectList(userDetails);
@@ -44,6 +48,7 @@ public class ProjectController {
     }
 
     @Operation(summary = "프로젝트 사이드바 정보", description = "프로젝트 사이드바 정보 API")
+    @SecurityRequirement(name = "Authorization")
     @GetMapping("/{projectId}/sidebar")
     public ResponseEntity<ApiResponse<SidebarInfoResponse>> getSidebarInfo(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
         SidebarInfoResponse response = projectService.getSidebarInfo(userDetails, projectId);
@@ -51,6 +56,7 @@ public class ProjectController {
     }
 
     @Operation(summary = "프로젝트 팀원 리스트 조회", description = "프로젝트 팀원 리스트 조회 API")
+    @SecurityRequirement(name = "Authorization")
     @GetMapping("/{projectId}/members")
     public ResponseEntity<ApiResponse<List<ProjectMemberListResponse>>> getProjectMemberList(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
         List<ProjectMemberListResponse> responses = projectService.getProjectMemberList(userDetails, projectId);
@@ -58,6 +64,7 @@ public class ProjectController {
     }
 
     @Operation(summary = "프로젝트 설정 정보 조회", description = "프로젝트 설정 정보 조회 API")
+    @SecurityRequirement(name = "Authorization")
     @GetMapping("/{projectId}/settings")
     public ResponseEntity<ApiResponse<ProjectSettingsResponseInfo>> getProjectSettingsInfo(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId){
         ProjectSettingsResponseInfo response = projectService.ProjectSettingsResponseInfo(userDetails, projectId);
@@ -65,6 +72,7 @@ public class ProjectController {
     }
 
     @Operation(summary = "프로젝트 삭제", description = "프로젝트 삭제 API")
+    @SecurityRequirement(name = "Authorization")
     @DeleteMapping("{projectId}")
     public ResponseEntity<ApiResponse<Void>> deleteProject(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long projectId, @Valid @RequestBody ProjectDeleteRequest request){
         projectService.deleteProject(userDetails, projectId, request);

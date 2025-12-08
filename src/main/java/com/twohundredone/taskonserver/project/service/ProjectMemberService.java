@@ -4,6 +4,8 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.CA
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.FORBIDDEN;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.NOT_PROJECT_MEMBER;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_NOT_FOUND;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.ADD_PROJECT_MEMBER_SUCCESS;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.NO_NEW_TEAM_MEMBER;
 
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
@@ -54,10 +56,10 @@ public class ProjectMemberService {
                 .filter(id -> !alreadyMembers.contains(id))
                 .toList();
 
-        // 🔹 아무도 추가되지 않은 경우
+        // 아무도 추가되지 않은 경우
         if (targetUserIds.isEmpty()) {
             return ApiResponse.success(
-                    ResponseStatusSuccess.NO_NEW_TEAM_MEMBER,
+                    NO_NEW_TEAM_MEMBER,
                     new AddMemberResponse(List.of())
             );
         }
@@ -66,14 +68,12 @@ public class ProjectMemberService {
         List<User> users = userRepository.findAllById(targetUserIds);
 
         // 새 ProjectMember 생성
-        List<ProjectMember> newMembers = users.stream()
-                .map(user -> ProjectMember.create(project, user))
-                .toList();
+        users.forEach(user -> project.addMember(ProjectMember.createMember(user)));
 
-        projectMemberRepository.saveAll(newMembers);
+        projectRepository.save(project);
 
         return ApiResponse.success(
-                ResponseStatusSuccess.ADD_PROJECT_MEMBER_SUCCESS,
+                ADD_PROJECT_MEMBER_SUCCESS,
                 new AddMemberResponse(targetUserIds)
         );
     }

@@ -1,25 +1,33 @@
 package com.twohundredone.taskonserver.task.entity;
 
+import com.twohundredone.taskonserver.common.entity.BaseEntity;
 import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.task.enums.TaskPriority;
 import com.twohundredone.taskonserver.task.enums.TaskStatus;
-import com.twohundredone.taskonserver.user.entity.User;
-import jakarta.persistence.*;
-import lombok.*;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "task")
 @Getter
+@Table(name = "task")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
-public class Task {
+public class Task extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "task_id")
     private Long taskId;
 
@@ -28,12 +36,7 @@ public class Task {
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
-    // User 연결
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(name = "task_title", nullable = false, length = 255)
+    @Column(name = "task_title", nullable = false)
     private String taskTitle;
 
     @Column(columnDefinition = "TEXT")
@@ -53,9 +56,43 @@ public class Task {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Builder
+    public Task(
+            Project project,
+            String taskTitle,
+            String description,
+            TaskStatus status,
+            TaskPriority priority,
+            LocalDate startDate,
+            LocalDate dueDate
+    ) {
+        this.project = project;
+        this.taskTitle = taskTitle;
+        this.description = description;
+        this.status = status;
+        this.priority = priority;
+        this.startDate = startDate;
+        this.dueDate = dueDate;
+    }
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    public void updateTitle(String taskTitle) {
+        this.taskTitle = taskTitle;
+    }
+
+    public void updateDescription(String description) {
+        this.description = description;
+    }
+
+    public void updateStatus(TaskStatus status) {
+        this.status = status;
+    }
+
+    public void updatePriority(TaskPriority priority) {
+        this.priority = priority;
+    }
+
+    public void updateDates(LocalDate startDate, LocalDate dueDate) {
+        this.startDate = startDate;
+        this.dueDate = dueDate;
+    }
 }
