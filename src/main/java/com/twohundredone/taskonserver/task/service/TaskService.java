@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,7 @@ public class TaskService {
     private final TaskParticipantRepository taskParticipantRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public TaskCreateResponse createTask(Long loginUserId, Long projectId, TaskCreateRequest request) {
 
         // 1) 프로젝트 조회
