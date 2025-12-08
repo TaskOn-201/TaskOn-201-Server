@@ -84,11 +84,15 @@ public class Task extends BaseEntity {
     }
 
     public void updateStatus(TaskStatus status) {
-        this.status = status;
+        if (status != null) {
+            this.status = status;
+        }
     }
 
     public void updatePriority(TaskPriority priority) {
-        this.priority = priority;
+        if (priority != null) {
+            this.priority = priority;
+        }
     }
 
     public void updateDates(LocalDate startDate, LocalDate dueDate) {

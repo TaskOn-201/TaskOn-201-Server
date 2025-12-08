@@ -14,10 +14,8 @@ public record TaskDetailResponse(
         String title,
         TaskStatus status,
         TaskPriority priority,
-
         AssigneeDto assignee,
         List<ParticipantDto> participants,
-
         LocalDate startDate,
         LocalDate dueDate,
         String description,

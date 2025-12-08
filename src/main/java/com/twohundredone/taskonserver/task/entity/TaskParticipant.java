@@ -49,4 +49,12 @@ public class TaskParticipant {
     public void updateRole(TaskRole taskRole) {
         this.taskRole = taskRole;
     }
+
+    public boolean isAssignee() {
+        return this.taskRole == TaskRole.ASSIGNEE;
+    }
+
+    public boolean isParticipant() {
+        return this.taskRole == TaskRole.PARTICIPANT;
+    }
 }

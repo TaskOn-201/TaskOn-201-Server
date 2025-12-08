@@ -21,6 +21,8 @@ public enum ResponseStatusError {
     CANNOT_REMOVE_LEADER(400, "프로젝트 리더는 삭제할 수 없습니다."),
     INVALID_DATE_RANGE(400, "시작일은 마감일보다 이후일 수 없습니다."),
     TASK_PROJECT_MISMATCH(400, "해당 업무는 이 프로젝트에 속하지 않습니다."),
+    INVALID_PAST_DATE_CREATE(400, "시작일과 마감일은 오늘보다 이전일 수 없습니다."),
+    INVALID_PAST_DATE_UPDATE(400, "마감일은 오늘보다 이전일 수 없습니다."),
 
     //401 Unauthorized
     PASSWORD_INCORRECT(401, "비밀번호를 확인해주세요."),

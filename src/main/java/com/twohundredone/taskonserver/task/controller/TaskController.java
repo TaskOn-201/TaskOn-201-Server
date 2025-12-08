@@ -2,12 +2,14 @@ package com.twohundredone.taskonserver.task.controller;
 
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_TASK_DETAIL;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_CREATE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_UPDATE;
 
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
+import com.twohundredone.taskonserver.task.dto.TaskUpdateRequest;
 import com.twohundredone.taskonserver.task.service.TaskService;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +56,23 @@ public class TaskController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(GET_TASK_DETAIL, response)
+        );
+    }
+
+    @Operation(summary = "Task 수정", description = "Task 정보를 수정합니다.")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/{taskId}")
+    public ResponseEntity<ApiResponse<TaskDetailResponse>> updateTask(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @Valid @RequestBody TaskUpdateRequest request
+    ) {
+        TaskDetailResponse response =
+                taskService.updateTask(userDetails.getId(), projectId, taskId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(TASK_UPDATE, response)
         );
     }
 }
