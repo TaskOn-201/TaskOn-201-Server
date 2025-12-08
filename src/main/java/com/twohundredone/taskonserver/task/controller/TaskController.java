@@ -1,11 +1,13 @@
 package com.twohundredone.taskonserver.task.controller;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_TASK_DETAIL;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_CREATE;
 
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
+import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
 import com.twohundredone.taskonserver.task.service.TaskService;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,5 +39,21 @@ public class TaskController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(TASK_CREATE, response));
+    }
+
+    @Operation(summary = "Task 상세 조회", description = "Task 상세 정보를 조회합니다.")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/{taskId}")
+    public ResponseEntity<ApiResponse<TaskDetailResponse>> getTaskDetail(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long taskId
+    ) {
+        TaskDetailResponse response =
+                taskService.getTaskDetail(userDetails.getId(), projectId, taskId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(GET_TASK_DETAIL, response)
+        );
     }
 }

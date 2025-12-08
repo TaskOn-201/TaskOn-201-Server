@@ -25,6 +25,7 @@ public enum ResponseStatusSuccess {
     NO_NEW_TEAM_MEMBER(200, "추가할 팀원이 없습니다. 모두 이미 프로젝트 멤버입니다."),
     SELECTED_USER_SUCCESS(200, "선택된 사용자를 조회하였습니다."),
     DELETE_PROJECT_MEMBER_SUCCESS(200, "프로젝트 팀원 삭제 성공"),
+    GET_TASK_DETAIL(200, "Task 상세보기를 조회했습니다."),
 
     //201 Created
     SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),

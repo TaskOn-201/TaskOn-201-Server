@@ -20,6 +20,7 @@ public enum ResponseStatusError {
     NOT_PROJECT_MEMBER(400, "해당 사용자는 프로젝트 멤버가 아닙니다."),
     CANNOT_REMOVE_LEADER(400, "프로젝트 리더는 삭제할 수 없습니다."),
     INVALID_DATE_RANGE(400, "시작일은 마감일보다 이후일 수 없습니다."),
+    TASK_PROJECT_MISMATCH(400, "해당 업무는 이 프로젝트에 속하지 않습니다."),
 
     //401 Unauthorized
     PASSWORD_INCORRECT(401, "비밀번호를 확인해주세요."),
@@ -37,11 +38,14 @@ public enum ResponseStatusError {
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),
     PROJECT_NOT_FOUND(404, "프로젝트 정보를 찾을 수 없습니다."),
     LEADER_NOT_FOUND(404, "리더를 찾을 수 없습니다"),
+    TASK_NOT_FOUND(404, "업무를 찾을 수 없습니다."),
 
 
     //500 Internal Server Error
     SERVER_ERROR(500, "서버 내부 오류가 발생했습니다."),
-    FILE_UPLOAD_ERROR(500, "파일 업로드 중 오류가 발생했습니다.");
+    FILE_UPLOAD_ERROR(500, "파일 업로드 중 오류가 발생했습니다."),
+    ASSIGNEE_NOT_FOUND(500, "업무의 담당자 정보가 존재하지 않습니다.");
+
 
     private final int statusCode;
     private final String message;

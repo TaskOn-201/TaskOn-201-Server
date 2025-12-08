@@ -1,9 +1,12 @@
 package com.twohundredone.taskonserver.task.service;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.ASSIGNEE_NOT_FOUND;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.INVALID_DATE_RANGE;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.NOT_PROJECT_MEMBER;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_FORBIDDEN;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_NOT_FOUND;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TASK_NOT_FOUND;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TASK_PROJECT_MISMATCH;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.USER_NOT_FOUND;
 
 import com.twohundredone.taskonserver.global.exception.CustomException;
@@ -12,6 +15,7 @@ import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
+import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
 import com.twohundredone.taskonserver.task.entity.Task;
 import com.twohundredone.taskonserver.task.entity.TaskParticipant;
 import com.twohundredone.taskonserver.task.enums.TaskPriority;
@@ -122,4 +126,70 @@ public class TaskService {
                 .description(task.getDescription())
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public TaskDetailResponse getTaskDetail(Long loginUserId, Long projectId, Long taskId) {
+
+        // 1) 프로젝트 존재 여부
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
+
+        // 2) 로그인 사용자 프로젝트 권한 확인
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, loginUserId)
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
+
+        // 3) Task 조회
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(TASK_NOT_FOUND));
+
+        // 4) Task가 이 프로젝트에 속한 Task인지 검증
+        if (!task.getProject().getProjectId().equals(projectId)) {
+            throw new CustomException(TASK_PROJECT_MISMATCH);
+        }
+
+        // 5) TaskParticipant 목록 조회
+        List<TaskParticipant> participants =
+                taskParticipantRepository.findAllByTask_TaskId(taskId);
+
+        // 5-1) Assignee 찾기
+        TaskParticipant assignee = participants.stream()
+                .filter(tp -> tp.getTaskRole().isAssignee()) // enum에 isAssignee() 만들어두면 깔끔
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ASSIGNEE_NOT_FOUND));
+
+        TaskDetailResponse.AssigneeDto assigneeDto =
+                TaskDetailResponse.AssigneeDto.builder()
+                        .userId(assignee.getUser().getUserId())
+                        .name(assignee.getUser().getName())
+                        .profileImageUrl(assignee.getUser().getProfileImageUrl())
+                        .build();
+
+        // 5-2) Participant DTO 변환 (assignee 제외)
+        List<TaskDetailResponse.ParticipantDto> participantDtos =
+                participants.stream()
+                        .filter(tp -> tp.getTaskRole().isParticipant())
+                        .map(tp -> TaskDetailResponse.ParticipantDto.builder()
+                                .userId(tp.getUser().getUserId())
+                                .name(tp.getUser().getName())
+                                .profileImageUrl(tp.getUser().getProfileImageUrl())
+                                .build())
+                        .toList();
+
+        // 6) 최종 Response 변환
+        return TaskDetailResponse.builder()
+                .taskId(task.getTaskId())
+                .projectId(projectId)
+                .title(task.getTaskTitle())
+                .status(task.getStatus())
+                .priority(task.getPriority())
+                .assignee(assigneeDto)
+                .participants(participantDtos)
+                .startDate(task.getStartDate())
+                .dueDate(task.getDueDate())
+                .description(task.getDescription())
+                .createdAt(task.getCreatedAt())
+                .updatedAt(task.getModifiedAt())
+                .build();
+    }
+
 }
