@@ -41,15 +41,12 @@ public class TaskService {
         // 3) Task 엔티티 생성
         Task task = Task.builder()
                 .project(project)
-                .user(user)
                 .taskTitle(request.title())
                 .description(request.description())
                 .status(request.status())
                 .priority(request.priority())
                 .startDate(LocalDate.now())
                 .dueDate(request.dueDate())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
         // 4) 저장하기

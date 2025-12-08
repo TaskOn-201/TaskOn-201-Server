@@ -27,7 +27,6 @@ public class TaskDetailResponse {
         return TaskDetailResponse.builder()
                 .taskId(task.getTaskId())
                 .projectId(task.getProject().getProjectId())
-                .writerId(task.getUser().getUserId())
                 .taskTitle(task.getTaskTitle())
                 .description(task.getDescription())
                 .startDate(task.getStartDate())

@@ -26,7 +26,6 @@ public class TaskCreateResponse {
         return TaskCreateResponse.builder()
                 .taskId(task.getTaskId())
                 .projectId(task.getProject().getProjectId())
-                .userId(task.getUser().getUserId())
                 .taskTitle(task.getTaskTitle())
                 .description(task.getDescription())
                 .dueDate(task.getDueDate())
