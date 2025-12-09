@@ -16,6 +16,8 @@ import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
+import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto;
+import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
@@ -26,6 +28,7 @@ import com.twohundredone.taskonserver.task.enums.TaskPriority;
 import com.twohundredone.taskonserver.task.enums.TaskRole;
 import com.twohundredone.taskonserver.task.enums.TaskStatus;
 import com.twohundredone.taskonserver.task.repository.TaskParticipantRepository;
+import com.twohundredone.taskonserver.task.repository.TaskQueryRepository;
 import com.twohundredone.taskonserver.task.repository.TaskRepository;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
@@ -44,6 +47,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskParticipantRepository taskParticipantRepository;
     private final UserRepository userRepository;
+    private final TaskQueryRepository taskQueryRepository;
 
     @Transactional
     public TaskCreateResponse createTask(Long loginUserId, Long projectId, TaskCreateRequest request) {
@@ -307,6 +311,80 @@ public class TaskService {
                 .build();
     }
 
+    @Transactional
+    public void deleteTask(Long loginUserId, Long projectId, Long taskId) {
+
+        // 1) 프로젝트 검증
+        projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
+
+        // 2) 프로젝트 멤버인지 확인
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, loginUserId)
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
+
+        // 3) Task 조회
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(TASK_NOT_FOUND));
+
+        // 4) Task가 이 프로젝트에 소속된 Task인지 확인
+        if (!task.getProject().getProjectId().equals(projectId)) {
+            throw new CustomException(TASK_PROJECT_MISMATCH);
+        }
+
+        // 5) TaskParticipant 조회
+        List<TaskParticipant> participants =
+                taskParticipantRepository.findAllByTask_TaskId(taskId);
+
+        // 6) 로그인한 유저가 Assignee인지 체크
+        TaskParticipant assignee = participants.stream()
+                .filter(TaskParticipant::isAssignee)
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ASSIGNEE_NOT_FOUND));
+
+        if (!assignee.getUser().getUserId().equals(loginUserId)) {
+            throw new CustomException(FORBIDDEN);
+        }
+
+        // 7) TaskParticipant 먼저 삭제
+        taskParticipantRepository.deleteAllByTask_TaskId(taskId);
+
+        // 8) Task 삭제
+        taskRepository.delete(task);
+    }
+
+    @Transactional(readOnly = true)
+    public TaskBoardResponse getTaskBoard(
+            Long loginUserId,
+            Long projectId,
+            String title,
+            TaskPriority priority,
+            Long userId
+    ) {
+
+        // 1. 프로젝트 권한 체크
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, loginUserId)
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
+
+        // 2. Task 목록 조회
+        List<Task> tasks = taskQueryRepository.findTasksWithFilters(
+                projectId, title, priority, userId
+        );
+
+        // 3. Task → DTO 변환
+        List<TaskBoardItemDto> items = tasks.stream()
+                .map(this::convertToBoardItem)
+                .toList();
+
+        // 4. 상태별로 분리
+        return TaskBoardResponse.builder()
+                .todo(filterByStatus(items, TaskStatus.TODO))
+                .inProgress(filterByStatus(items, TaskStatus.IN_PROGRESS))
+                .completed(filterByStatus(items, TaskStatus.COMPLETED))
+                .build();
+    }
+
+
+
 
     private void updateTaskParticipants(Task task, Long assigneeId, List<Long> newIds) {
 
@@ -354,6 +432,41 @@ public class TaskService {
         }
     }
 
+    private TaskBoardItemDto convertToBoardItem(Task task) {
 
+        List<TaskParticipant> participants =
+                taskParticipantRepository.findAllByTask_TaskId(task.getTaskId());
+
+        TaskParticipant assignee = participants.stream()
+                .filter(TaskParticipant::isAssignee)
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ASSIGNEE_NOT_FOUND));
+
+        List<String> participantImages =
+                participants.stream()
+                        .filter(TaskParticipant::isParticipant)
+                        .map(tp -> tp.getUser().getProfileImageUrl())
+                        .toList();
+
+        int commentCount = 0; // TODO: 댓글 기능 생기면 교체
+
+        return TaskBoardItemDto.builder()
+                .taskId(task.getTaskId())
+                .title(task.getTaskTitle())
+                .status(task.getStatus())       // 추가
+                .priority(task.getPriority())
+                .assigneeProfileImageUrl(assignee.getUser().getProfileImageUrl())
+                .participantProfileImageUrls(participantImages)
+                .commentCount(commentCount)
+                .build();
+    }
+
+    private List<TaskBoardItemDto> filterByStatus(
+            List<TaskBoardItemDto> items, TaskStatus status
+    ) {
+        return items.stream()
+                .filter(item -> item.status() == status)
+                .toList();
+    }
 
 }

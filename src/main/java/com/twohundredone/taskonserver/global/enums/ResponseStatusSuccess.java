@@ -27,6 +27,8 @@ public enum ResponseStatusSuccess {
     DELETE_PROJECT_MEMBER_SUCCESS(200, "프로젝트 팀원 삭제 성공"),
     GET_TASK_DETAIL(200, "Task 상세보기를 조회했습니다."),
     TASK_UPDATE(200, "Task 수정을 완료했습니다."),
+    TASK_DELETE(200, "Task 삭제를 완료했습니다."),
+    GET_TASK_BOARD(200, "Task 보드를 조회했습니다."),
 
     //201 Created
     SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),
