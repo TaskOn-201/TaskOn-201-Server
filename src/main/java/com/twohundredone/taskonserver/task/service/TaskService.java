@@ -21,6 +21,8 @@ import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
+import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateRequest;
+import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskUpdateRequest;
 import com.twohundredone.taskonserver.task.entity.Task;
 import com.twohundredone.taskonserver.task.entity.TaskParticipant;
@@ -383,8 +385,56 @@ public class TaskService {
                 .build();
     }
 
+    @Transactional
+    public TaskStatusUpdateResponse updateTaskStatus(
+            Long loginUserId,
+            Long projectId,
+            Long taskId,
+            TaskStatusUpdateRequest request
+    ) {
 
+        // 1) 프로젝트 검증
+        projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
 
+        // 2) 프로젝트 멤버인지 확인
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, loginUserId)
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
+
+        // 3) Task 조회
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(TASK_NOT_FOUND));
+
+        // 4) Task가 이 프로젝트에 속하는지 검증
+        if (!task.getProject().getProjectId().equals(projectId)) {
+            throw new CustomException(TASK_PROJECT_MISMATCH);
+        }
+
+        // 5) TaskParticipant 조회 (Assignee 찾기)
+        List<TaskParticipant> participants =
+                taskParticipantRepository.findAllByTask_TaskId(taskId);
+
+        TaskParticipant assignee = participants.stream()
+                .filter(TaskParticipant::isAssignee)
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ASSIGNEE_NOT_FOUND));
+
+        // 6) Assignee만 상태 변경 가능
+        if (!assignee.getUser().getUserId().equals(loginUserId)) {
+            throw new CustomException(FORBIDDEN);
+        }
+
+        // 7) 상태 변경
+        task.updateStatus(request.status());
+
+        // 8) 응답 반환
+        return TaskStatusUpdateResponse.builder()
+                .taskId(task.getTaskId())
+                .projectId(projectId)
+                .status(task.getStatus())
+                .updatedAt(task.getModifiedAt())
+                .build();
+    }
 
     private void updateTaskParticipants(Task task, Long assigneeId, List<Long> newIds) {
 

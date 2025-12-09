@@ -5,6 +5,7 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_CREATE;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_DELETE;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_UPDATE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.UPDATED_TASK_STATUS;
 
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
@@ -12,6 +13,8 @@ import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
+import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateRequest;
+import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskUpdateRequest;
 import com.twohundredone.taskonserver.task.enums.TaskPriority;
 import com.twohundredone.taskonserver.task.service.TaskService;
@@ -113,6 +116,23 @@ public class TaskController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(GET_TASK_BOARD, response)
+        );
+    }
+
+    @Operation(summary = "Task 상태 변경", description = "드래그 앤 드롭으로 Task 상태를 변경합니다.")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/{taskId}/status")
+    public ResponseEntity<ApiResponse<TaskStatusUpdateResponse>> updateTaskStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @Valid @RequestBody TaskStatusUpdateRequest request
+    ) {
+        TaskStatusUpdateResponse response =
+                taskService.updateTaskStatus(userDetails.getId(), projectId, taskId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(UPDATED_TASK_STATUS, response)
         );
     }
 
