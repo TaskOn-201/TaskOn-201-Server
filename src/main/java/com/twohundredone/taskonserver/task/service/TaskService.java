@@ -368,14 +368,8 @@ public class TaskService {
                 .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         // Task 목록 조회
-        List<Task> tasks = taskQueryRepository.findTasksWithFilters(
-                projectId, title, priority, userId
-        );
-
-        // Task → DTO 변환
-        List<TaskBoardItemDto> items = tasks.stream()
-                .map(this::convertToBoardItem)
-                .toList();
+        List<TaskBoardItemDto> items =
+                taskQueryRepository.findBoardItemsWithFilters(projectId, title, priority, userId);
 
         // 상태별로 분리
         return TaskBoardResponse.builder()
@@ -480,35 +474,6 @@ public class TaskService {
 
             taskParticipantRepository.save(taskParticipant);
         }
-    }
-
-    private TaskBoardItemDto convertToBoardItem(Task task) {
-
-        List<TaskParticipant> participants =
-                taskParticipantRepository.findAllByTask_TaskId(task.getTaskId());
-
-        TaskParticipant assignee = participants.stream()
-                .filter(TaskParticipant::isAssignee)
-                .findFirst()
-                .orElseThrow(() -> new CustomException(ASSIGNEE_NOT_FOUND));
-
-        List<String> participantImages =
-                participants.stream()
-                        .filter(TaskParticipant::isParticipant)
-                        .map(tp -> tp.getUser().getProfileImageUrl())
-                        .toList();
-
-        int commentCount = 0; // TODO: 댓글 기능 생기면 교체
-
-        return TaskBoardItemDto.builder()
-                .taskId(task.getTaskId())
-                .title(task.getTaskTitle())
-                .status(task.getStatus())       // 추가
-                .priority(task.getPriority())
-                .assigneeProfileImageUrl(assignee.getUser().getProfileImageUrl())
-                .participantProfileImageUrls(participantImages)
-                .commentCount(commentCount)
-                .build();
     }
 
     private List<TaskBoardItemDto> filterByStatus(
