@@ -1,11 +1,22 @@
 package com.twohundredone.taskonserver.task.controller;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_TASK_BOARD;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_TASK_DETAIL;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_CREATE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_DELETE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_UPDATE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.UPDATED_TASK_STATUS;
 
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
+import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
+import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
+import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateRequest;
+import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateResponse;
+import com.twohundredone.taskonserver.task.dto.TaskUpdateRequest;
+import com.twohundredone.taskonserver.task.enums.TaskPriority;
 import com.twohundredone.taskonserver.task.service.TaskService;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,4 +49,92 @@ public class TaskController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(TASK_CREATE, response));
     }
+
+    @Operation(summary = "Task 상세 조회", description = "Task 상세 정보를 조회합니다.")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/{taskId}")
+    public ResponseEntity<ApiResponse<TaskDetailResponse>> getTaskDetail(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long taskId
+    ) {
+        TaskDetailResponse response =
+                taskService.getTaskDetail(userDetails.getId(), projectId, taskId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(GET_TASK_DETAIL, response)
+        );
+    }
+
+    @Operation(summary = "Task 수정", description = "Task 정보를 수정합니다.")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/{taskId}")
+    public ResponseEntity<ApiResponse<TaskDetailResponse>> updateTask(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @Valid @RequestBody TaskUpdateRequest request
+    ) {
+        TaskDetailResponse response =
+                taskService.updateTask(userDetails.getId(), projectId, taskId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(TASK_UPDATE, response)
+        );
+    }
+
+    @Operation(summary = "Task 삭제", description = "해당 Task를 삭제합니다. (Assignee만 가능)")
+    @SecurityRequirement(name = "Authorization")
+    @DeleteMapping("/{taskId}")
+    public ResponseEntity<ApiResponse<Void>> deleteTask(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long taskId
+    ) {
+
+        taskService.deleteTask(userDetails.getId(), projectId, taskId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(TASK_DELETE, null)
+        );
+    }
+
+    @Operation(summary = "Task 보드 조회", description = "상태별 Task 목록을 반환합니다.")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/board")
+    public ResponseEntity<ApiResponse<TaskBoardResponse>> getTaskBoard(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) TaskPriority priority,
+            @RequestParam(required = false) Long userId
+    ) {
+
+        TaskBoardResponse response = taskService.getTaskBoard(
+                userDetails.getId(), projectId, title, priority, userId
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(GET_TASK_BOARD, response)
+        );
+    }
+
+    @Operation(summary = "Task 상태 변경", description = "드래그 앤 드롭으로 Task 상태를 변경합니다.")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/{taskId}/status")
+    public ResponseEntity<ApiResponse<TaskStatusUpdateResponse>> updateTaskStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @Valid @RequestBody TaskStatusUpdateRequest request
+    ) {
+        TaskStatusUpdateResponse response =
+                taskService.updateTaskStatus(userDetails.getId(), projectId, taskId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(UPDATED_TASK_STATUS, response)
+        );
+    }
+
+
 }
