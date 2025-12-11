@@ -35,6 +35,7 @@ public enum ResponseStatusError {
     FORBIDDEN(403, "접근 권한이 없습니다."),
     PROJECT_FORBIDDEN(403, "해당 프로젝트에 대한 접근 권한이 없습니다."),
     ONLY_LEADER_CAN_DELETE(403, "프로젝트 삭제는 리더만 가능합니다."),
+    TASK_FORBIDDEN(403, "해당 태스크에 대한 접근 권한이 없습니다"),
 
     //404 Not Found
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),

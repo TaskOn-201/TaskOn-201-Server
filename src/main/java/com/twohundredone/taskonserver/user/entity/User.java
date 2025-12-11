@@ -30,7 +30,7 @@ public class User {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(length = 500)
+    @Column(length = 500, name = "profile_image_url")
     private String profileImageUrl;
 
     // 추후 OAuth2용

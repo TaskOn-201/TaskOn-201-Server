@@ -35,7 +35,8 @@ public enum ResponseStatusSuccess {
     SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),
     PROJECT_CREATE(201, "프로젝트 생성을 완료했습니다."),
     ADD_PROJECT_MEMBER_SUCCESS(201, "프로젝트에 팀원을 추가하였습니다."),
-    TASK_CREATE(201, "업무 생성을 완료했습니다.");
+    TASK_CREATE(201, "업무 생성을 완료했습니다."),
+    COMMENT_CREATE(201, "댓글 생성을 완료했습니다.");
 
     private final int statusCode;
 
