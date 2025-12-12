@@ -3,6 +3,7 @@ package com.twohundredone.taskonserver.comment.service;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.comment.dto.CommentCreateRequest;
 import com.twohundredone.taskonserver.comment.dto.CommentCreateResponse;
+import com.twohundredone.taskonserver.comment.dto.CommentListResponse;
 import com.twohundredone.taskonserver.comment.entity.Comment;
 import com.twohundredone.taskonserver.comment.repository.CommentRepository;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
@@ -15,6 +16,9 @@ import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
 
+    @Transactional
     public CommentCreateResponse createComment(CommentCreateRequest request, Long projectId, Long taskId, CustomUserDetails userDetails) {
         Long userId =  userDetails.getId();
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
@@ -60,5 +65,37 @@ public class CommentService {
                 .createdAt(saveComment.getCreatedAt())
                 .updatedAt(saveComment.getModifiedAt())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentListResponse> getComment(Long projectId, Long taskId, CustomUserDetails userDetails) {
+        Long userId =  userDetails.getId();
+
+        taskRepository.findById(taskId).orElseThrow(() -> new CustomException(ResponseStatusError.TASK_NOT_FOUND));
+
+        //해당 프로젝트에 속한 멤버만
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
+        //해당 task에 속한 멤버만
+        taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
+
+        List<Comment> commentList = commentRepository.findAllByTask_TaskId(taskId);
+
+        return commentList.stream().map(comment -> {
+            User u = comment.getUser();
+            CommentListResponse.Author author = CommentListResponse.Author.builder()
+                    .userId(u.getUserId())
+                    .name(u.getName())
+                    .profileImageUrl(u.getProfileImageUrl()).build();
+            return CommentListResponse.builder()
+                    .commentId(comment.getId())
+                    .author(author)
+                    .content(comment.getContent())
+                    .createdAt(comment.getCreatedAt())
+                    .updatedAt(comment.getModifiedAt())
+                    .build();
+        }).toList();
     }
 }
