@@ -100,6 +100,7 @@ public class CommentService {
     }
 
 
+    @Transactional
     public CommentUpdateResponse updateComment(Long projectId, Long taskId, Long commentId, CommentUpdateRequest request, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
@@ -111,19 +112,14 @@ public class CommentService {
         TaskParticipant taskParticipant = taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
                 .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
 
-        if(taskParticipant.getTaskRole() != TaskRole.ASSIGNEE){
-            throw new CustomException(ResponseStatusError.ONLY_ASSIGNEE_CAN_UPDATE);
-        }
-
         Comment comment =  commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ResponseStatusError.COMMENT_NOT_FOUND));
 
-        if(!comment.getUser().getUserId().equals(userId)){
-            throw new CustomException(ResponseStatusError.ONLY_AUTHOR_CAN_UPDATE);
+        if(!TaskRole.ASSIGNEE.equals(taskParticipant.getTaskRole()) || !comment.getUser().getUserId().equals(userId)){
+            throw new CustomException(ResponseStatusError.ONLY_ASSIGNEE_OR_AUTHOR_CAN_UPDATE);
         }
 
         comment.setContent(request.content());
-
 
         return CommentUpdateResponse.builder()
                 .commentId(comment.getId())
@@ -131,6 +127,28 @@ public class CommentService {
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getModifiedAt())
                 .build();
+    }
+
+    @Transactional
+    public void deleteComment(Long projectId, Long taskId, Long commentId, CustomUserDetails userDetails) {
+        Long userId = userDetails.getId();
+
+        //해당 프로젝트에 속한 멤버만
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
+        //해당 task에 속한 멤버만
+        TaskParticipant taskParticipant = taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.COMMENT_NOT_FOUND));
+
+        if(!TaskRole.ASSIGNEE.equals(taskParticipant.getTaskRole()) || !comment.getUser().getUserId().equals(userId)){
+            throw new CustomException(ResponseStatusError.ONLY_ASSIGNEE_OR_AUTHOR_CAN_DELETE);
+        }
+
+        commentRepository.delete(comment);
     }
 }
 

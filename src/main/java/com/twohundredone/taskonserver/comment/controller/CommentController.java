@@ -52,4 +52,15 @@ public class CommentController {
         CommentUpdateResponse response = commentService.updateComment(projectId, taskId, commentId, request, userDetails);
         return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.COMMENT_UPDATE, response));
     }
+
+    @Operation(summary = "댓글 삭제", description = "댓글 삭제 관련 API")
+    @SecurityRequirement(name = "Authorization")
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteComment
+            (@PathVariable Long projectId, @PathVariable Long taskId, @PathVariable Long commentId,
+             @AuthenticationPrincipal CustomUserDetails userDetails){
+        commentService.deleteComment(projectId, taskId, commentId, userDetails);
+        return ResponseEntity.ok(ApiResponse.success(ResponseStatusSuccess.COMMENT_DELETE, null));
+    }
 }
+

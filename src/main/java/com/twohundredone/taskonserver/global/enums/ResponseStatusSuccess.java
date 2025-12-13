@@ -32,6 +32,7 @@ public enum ResponseStatusSuccess {
     UPDATED_TASK_STATUS(200, "Task 상태 변경이 완료되었습니다."),
     GET_COMMENT_LIST(200, "댓글 목록 조회 성공"),
     COMMENT_UPDATE(200, "댓글 수정 완료"),
+    COMMENT_DELETE(200, "댓글 삭제 완료"),
 
     //201 Created
     SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),
