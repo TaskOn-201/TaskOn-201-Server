@@ -36,12 +36,16 @@ public enum ResponseStatusError {
     PROJECT_FORBIDDEN(403, "해당 프로젝트에 대한 접근 권한이 없습니다."),
     ONLY_LEADER_CAN_DELETE(403, "프로젝트 삭제는 리더만 가능합니다."),
     TASK_FORBIDDEN(403, "해당 태스크에 대한 접근 권한이 없습니다"),
+    ONLY_ASSIGNEE_CAN_UPDATE(403, "해당 댓글 수정은 담당자만 가능합니다."),
+    ONLY_AUTHOR_CAN_UPDATE(403, "해당 댓글 수정은 작성자만 가능합니다."),
+
 
     //404 Not Found
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),
     PROJECT_NOT_FOUND(404, "프로젝트 정보를 찾을 수 없습니다."),
     LEADER_NOT_FOUND(404, "리더를 찾을 수 없습니다"),
     TASK_NOT_FOUND(404, "업무를 찾을 수 없습니다."),
+    COMMENT_NOT_FOUND(404, "댓글을 찾을 수 없습니다"),
 
 
     //500 Internal Server Error

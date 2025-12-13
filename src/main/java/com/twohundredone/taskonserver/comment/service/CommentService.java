@@ -1,15 +1,15 @@
 package com.twohundredone.taskonserver.comment.service;
 
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
-import com.twohundredone.taskonserver.comment.dto.CommentCreateRequest;
-import com.twohundredone.taskonserver.comment.dto.CommentCreateResponse;
-import com.twohundredone.taskonserver.comment.dto.CommentListResponse;
+import com.twohundredone.taskonserver.comment.dto.*;
 import com.twohundredone.taskonserver.comment.entity.Comment;
 import com.twohundredone.taskonserver.comment.repository.CommentRepository;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.task.entity.Task;
+import com.twohundredone.taskonserver.task.entity.TaskParticipant;
+import com.twohundredone.taskonserver.task.enums.TaskRole;
 import com.twohundredone.taskonserver.task.repository.TaskParticipantRepository;
 import com.twohundredone.taskonserver.task.repository.TaskRepository;
 import com.twohundredone.taskonserver.user.entity.User;
@@ -98,4 +98,39 @@ public class CommentService {
                     .build();
         }).toList();
     }
+
+
+    public CommentUpdateResponse updateComment(Long projectId, Long taskId, Long commentId, CommentUpdateRequest request, CustomUserDetails userDetails) {
+        Long userId = userDetails.getId();
+
+        //해당 프로젝트에 속한 멤버만
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+
+        //해당 task에 속한 멤버만
+        TaskParticipant taskParticipant = taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
+
+        if(taskParticipant.getTaskRole() != TaskRole.ASSIGNEE){
+            throw new CustomException(ResponseStatusError.ONLY_ASSIGNEE_CAN_UPDATE);
+        }
+
+        Comment comment =  commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.COMMENT_NOT_FOUND));
+
+        if(!comment.getUser().getUserId().equals(userId)){
+            throw new CustomException(ResponseStatusError.ONLY_AUTHOR_CAN_UPDATE);
+        }
+
+        comment.setContent(request.content());
+
+
+        return CommentUpdateResponse.builder()
+                .commentId(comment.getId())
+                .content(comment.getContent())
+                .createdAt(comment.getCreatedAt())
+                .updatedAt(comment.getModifiedAt())
+                .build();
+    }
 }
+

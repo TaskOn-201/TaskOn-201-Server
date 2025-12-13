@@ -4,14 +4,12 @@ import com.twohundredone.taskonserver.common.entity.BaseEntity;
 import com.twohundredone.taskonserver.task.entity.Task;
 import com.twohundredone.taskonserver.user.entity.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "comment")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
