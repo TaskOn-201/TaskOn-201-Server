@@ -50,4 +50,26 @@ public class CookieUtil {
         }
         return null;
     }
+
+    public static void deleteRefreshTokenCookie(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        boolean isLocal = request.getServerName().contains("localhost");
+
+        ResponseCookie.ResponseCookieBuilder cookieBuilder =
+                ResponseCookie.from(REFRESH_TOKEN_COOKIE, "")
+                        .httpOnly(true)
+                        .path("/")
+                        .maxAge(0);
+
+        if (isLocal) {
+            cookieBuilder.secure(false).sameSite("Lax").domain(null);
+        } else {
+            cookieBuilder.secure(true).sameSite("None").domain(".taskon.co.kr");
+        }
+
+        response.addHeader("Set-Cookie", cookieBuilder.build().toString());
+    }
+
 }
