@@ -3,6 +3,7 @@ package com.twohundredone.taskonserver.chat.controller;
 import com.twohundredone.taskonserver.chat.dto.ChatMessageRequest;
 import com.twohundredone.taskonserver.chat.dto.ChatMessageSendResponse;
 import com.twohundredone.taskonserver.chat.service.ChatService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -14,6 +15,7 @@ import java.security.Principal;
 
 @Controller
 @RequiredArgsConstructor
+@SecurityRequirement(name = "Authorization")
 public class ChatStompController {
 
     private final ChatService chatService;
@@ -21,6 +23,7 @@ public class ChatStompController {
 
     // SEND: /app/chat/rooms/{chatId}
     // SUB:  /topic/chat/rooms/{chatId}
+
     @MessageMapping("/chat/rooms/{chatId}")
     public void sendMessage(
             @DestinationVariable Long chatId,
