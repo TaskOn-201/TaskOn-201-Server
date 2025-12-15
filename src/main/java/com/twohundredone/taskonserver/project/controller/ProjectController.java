@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
-public class ProjectController {
+public class    ProjectController {
     private final ProjectService projectService;
 
     @Operation(summary = "프로젝트 생성", description = "프로젝트 생성 API")

@@ -30,12 +30,16 @@ public enum ResponseStatusSuccess {
     TASK_DELETE(200, "Task 삭제를 완료했습니다."),
     GET_TASK_BOARD(200, "Task 보드를 조회했습니다."),
     UPDATED_TASK_STATUS(200, "Task 상태 변경이 완료되었습니다."),
+    CHAT_ROOM_LIST_SUCCESS(200, "채팅방 리스트 조회 성공"),
+    CHAT_MESSAGE_LIST_SUCCESS(200,"메세지조회 성공"),
 
     //201 Created
     SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),
     PROJECT_CREATE(201, "프로젝트 생성을 완료했습니다."),
     ADD_PROJECT_MEMBER_SUCCESS(201, "프로젝트에 팀원을 추가하였습니다."),
-    TASK_CREATE(201, "업무 생성을 완료했습니다.");
+    TASK_CREATE(201, "업무 생성을 완료했습니다."),
+    CHAT_MESSAGE_SENT(201,"채팅 메시지를 전송했습니다." );
+
 
     private final int statusCode;
 
