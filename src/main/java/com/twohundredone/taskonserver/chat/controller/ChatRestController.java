@@ -9,6 +9,7 @@ import com.twohundredone.taskonserver.chat.service.ChatService;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
+
 public class ChatRestController {
 
     private final ChatService chatService;
@@ -28,6 +30,7 @@ public class ChatRestController {
             summary = "채팅방 리스트 조회",
             description = "로그인한 사용자가 속한 모든 채팅방 목록을 조회합니다."
     )
+    @SecurityRequirement(name = "Authorization")
     @GetMapping("/rooms")
     public ApiResponse<List<ChatRoomListResponse>> getMyRooms(
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -40,6 +43,7 @@ public class ChatRestController {
 
     // ✅ 채팅방 메시지 리스트 조회
     @Operation(summary = "채팅 메시지 리스트 조회", description = "특정 채팅방의 메시지 목록을 조회합니다.")
+    @SecurityRequirement(name = "Authorization")
     @GetMapping("/rooms/{chatRoomId}/messages")
     public ApiResponse<List<ChatMessageListResponse>> getMessages(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -57,6 +61,7 @@ public class ChatRestController {
             description = "특정 채팅방에 메시지를 전송합니다."
     )
     @PostMapping("/rooms/{chatRoomId}/messages")
+    @SecurityRequirement(name = "Authorization")
     public ResponseEntity<ApiResponse<ChatMessageSendResponse>> sendMessageRest(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long chatRoomId,
