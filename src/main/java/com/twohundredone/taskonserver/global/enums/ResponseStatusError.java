@@ -24,6 +24,7 @@ public enum ResponseStatusError {
     INVALID_PAST_DATE_CREATE(400, "시작일과 마감일은 오늘보다 이전일 수 없습니다."),
     INVALID_PAST_DATE_UPDATE(400, "마감일은 오늘보다 이전일 수 없습니다."),
     CHAT_BAD_REQUEST(400, "잘못된 요청입니다."),
+    COMMENT_TASK_MISMATCH(400, "해당 댓글은 이 업무에 속하지 않습니다."),
 
     //401 Unauthorized
     PASSWORD_INCORRECT(401, "비밀번호를 확인해주세요."),

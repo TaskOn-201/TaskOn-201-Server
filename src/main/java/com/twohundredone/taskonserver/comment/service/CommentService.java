@@ -1,5 +1,12 @@
 package com.twohundredone.taskonserver.comment.service;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.COMMENT_NOT_FOUND;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.COMMENT_TASK_MISMATCH;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.ONLY_ASSIGNEE_OR_AUTHOR_CAN_UPDATE;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_FORBIDDEN;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TASK_FORBIDDEN;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TASK_PROJECT_MISMATCH;
+
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.comment.dto.*;
 import com.twohundredone.taskonserver.comment.entity.Comment;
@@ -32,16 +39,20 @@ public class CommentService {
 
     @Transactional
     public CommentCreateResponse createComment(CommentCreateRequest request, Long projectId, Long taskId, CustomUserDetails userDetails) {
-        Long userId =  userDetails.getId();
-        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new CustomException(ResponseStatusError.TASK_NOT_FOUND));
-        //해당 프로젝트에 속한 멤버만
-        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+        Long userId = userDetails.getId();
 
-        //해당 task에 속한 멤버만
-        taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.USER_NOT_FOUND));
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_NOT_FOUND));
+
+        if (!task.getProject().getProjectId().equals(projectId)) {
+            throw new CustomException(TASK_PROJECT_MISMATCH);
+        }
+
+        // 접근 권한 검증 (project + task)
+        validateTaskAccess(projectId, taskId, userId);
 
         Comment comment = Comment.builder()
                 .content(request.content())
@@ -49,54 +60,56 @@ public class CommentService {
                 .task(task)
                 .build();
 
-        Comment saveComment = commentRepository.save(comment);
+        Comment saved = commentRepository.save(comment);
 
-        CommentCreateResponse.Author author = CommentCreateResponse.Author.builder()
-                .userId(saveComment.getUser().getUserId())
-                .name(saveComment.getUser().getName())
-                .profileImageUrl(saveComment.getUser().getProfileImageUrl())
+        CommentAuthorResponse author = CommentAuthorResponse.builder()
+                .userId(user.getUserId())
+                .name(user.getName())
+                .profileImageUrl(user.getProfileImageUrl())
                 .build();
 
         return CommentCreateResponse.builder()
-                .commentId(saveComment.getId())
+                .commentId(saved.getId())
                 .taskId(taskId)
                 .author(author)
-                .content(saveComment.getContent())
-                .createdAt(saveComment.getCreatedAt())
-                .updatedAt(saveComment.getModifiedAt())
+                .content(saved.getContent())
+                .createdAt(saved.getCreatedAt())
+                .updatedAt(saved.getModifiedAt())
                 .build();
     }
 
     @Transactional(readOnly = true)
     public List<CommentListResponse> getComment(Long projectId, Long taskId, CustomUserDetails userDetails) {
-        Long userId =  userDetails.getId();
+        Long userId = userDetails.getId();
 
-        taskRepository.findById(taskId).orElseThrow(() -> new CustomException(ResponseStatusError.TASK_NOT_FOUND));
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_NOT_FOUND));
 
-        //해당 프로젝트에 속한 멤버만
-        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+        if (!task.getProject().getProjectId().equals(projectId)) {
+            throw new CustomException(TASK_PROJECT_MISMATCH);
+        }
 
-        //해당 task에 속한 멤버만
-        taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
+        validateTaskAccess(projectId, taskId, userId);
 
-        List<Comment> commentList = commentRepository.findAllByTask_TaskId(taskId);
+        List<Comment> commentList =
+                commentRepository.findAllByTask_TaskIdOrderByCreatedAtAsc(taskId);
 
-        return commentList.stream().map(comment -> {
-            User u = comment.getUser();
-            CommentListResponse.Author author = CommentListResponse.Author.builder()
-                    .userId(u.getUserId())
-                    .name(u.getName())
-                    .profileImageUrl(u.getProfileImageUrl()).build();
-            return CommentListResponse.builder()
-                    .commentId(comment.getId())
-                    .author(author)
-                    .content(comment.getContent())
-                    .createdAt(comment.getCreatedAt())
-                    .updatedAt(comment.getModifiedAt())
-                    .build();
-        }).toList();
+        return commentList.stream()
+                .map(comment -> {
+                    User u = comment.getUser();
+                    return CommentListResponse.builder()
+                            .commentId(comment.getId())
+                            .author(CommentAuthorResponse.builder()
+                                    .userId(u.getUserId())
+                                    .name(u.getName())
+                                    .profileImageUrl(u.getProfileImageUrl())
+                                    .build())
+                            .content(comment.getContent())
+                            .createdAt(comment.getCreatedAt())
+                            .updatedAt(comment.getModifiedAt())
+                            .build();
+                })
+                .toList();
     }
 
 
@@ -104,22 +117,15 @@ public class CommentService {
     public CommentUpdateResponse updateComment(Long projectId, Long taskId, Long commentId, CommentUpdateRequest request, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
-        //해당 프로젝트에 속한 멤버만
-        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+        TaskParticipant taskParticipant =
+                validateTaskAccess(projectId, taskId, userId);
 
-        //해당 task에 속한 멤버만
-        TaskParticipant taskParticipant = taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
+        Comment comment =
+                validateCommentScope(projectId, taskId, commentId);
 
-        Comment comment =  commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.COMMENT_NOT_FOUND));
+        validateCommentAuthority(comment, taskParticipant, userId);
 
-        if(!TaskRole.ASSIGNEE.equals(taskParticipant.getTaskRole()) || !comment.getUser().getUserId().equals(userId)){
-            throw new CustomException(ResponseStatusError.ONLY_ASSIGNEE_OR_AUTHOR_CAN_UPDATE);
-        }
-
-        comment.setContent(request.content());
+        comment.updateContent(request.content());
 
         return CommentUpdateResponse.builder()
                 .commentId(comment.getId())
@@ -133,22 +139,63 @@ public class CommentService {
     public void deleteComment(Long projectId, Long taskId, Long commentId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
-        //해당 프로젝트에 속한 멤버만
-        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+        TaskParticipant taskParticipant =
+                validateTaskAccess(projectId, taskId, userId);
 
-        //해당 task에 속한 멤버만
-        TaskParticipant taskParticipant = taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.TASK_FORBIDDEN));
+        Comment comment =
+                validateCommentScope(projectId, taskId, commentId);
 
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.COMMENT_NOT_FOUND));
-
-        if(!TaskRole.ASSIGNEE.equals(taskParticipant.getTaskRole()) || !comment.getUser().getUserId().equals(userId)){
-            throw new CustomException(ResponseStatusError.ONLY_ASSIGNEE_OR_AUTHOR_CAN_DELETE);
-        }
+        validateCommentAuthority(comment, taskParticipant, userId);
 
         commentRepository.delete(comment);
     }
+
+    // 공통 검증 메서드
+    private TaskParticipant validateTaskAccess(
+            Long projectId,
+            Long taskId,
+            Long userId
+    ) {
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
+
+        return taskParticipantRepository.findByTask_TaskIdAndUser_UserId(taskId, userId)
+                .orElseThrow(() -> new CustomException(TASK_FORBIDDEN));
+    }
+
+    // 댓글 소속 검증 메서드
+    private Comment validateCommentScope(
+            Long projectId,
+            Long taskId,
+            Long commentId
+    ) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(COMMENT_NOT_FOUND));
+
+        if (!comment.getTask().getTaskId().equals(taskId)) {
+            throw new CustomException(COMMENT_TASK_MISMATCH);
+        }
+
+        if (!comment.getTask().getProject().getProjectId().equals(projectId)) {
+            throw new CustomException(TASK_PROJECT_MISMATCH);
+        }
+
+        return comment;
+    }
+
+    // 댓글 접근 권한 검증 메서드
+    private void validateCommentAuthority(
+            Comment comment,
+            TaskParticipant taskParticipant,
+            Long userId
+    ) {
+        boolean isAssignee = TaskRole.ASSIGNEE.equals(taskParticipant.getTaskRole());
+        boolean isAuthor = comment.getUser().getUserId().equals(userId);
+
+        if (!isAssignee && !isAuthor) {
+            throw new CustomException(ONLY_ASSIGNEE_OR_AUTHOR_CAN_UPDATE);
+        }
+    }
+
 }
 

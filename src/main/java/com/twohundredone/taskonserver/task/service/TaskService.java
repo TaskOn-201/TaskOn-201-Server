@@ -12,6 +12,7 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TA
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TASK_PROJECT_MISMATCH;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.USER_NOT_FOUND;
 
+import com.twohundredone.taskonserver.comment.repository.CommentRepository;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
@@ -50,6 +51,7 @@ public class TaskService {
     private final TaskParticipantRepository taskParticipantRepository;
     private final UserRepository userRepository;
     private final TaskQueryRepository taskQueryRepository;
+    private final CommentRepository commentRepository;
 
     @Transactional
     public TaskCreateResponse createTask(Long loginUserId, Long projectId, TaskCreateRequest request) {
@@ -346,6 +348,9 @@ public class TaskService {
         if (!assignee.getUser().getUserId().equals(loginUserId)) {
             throw new CustomException(FORBIDDEN);
         }
+
+        // 댓글 먼저 삭제
+        commentRepository.deleteAllByTask_TaskId(taskId);
 
         // TaskParticipant 먼저 삭제
         taskParticipantRepository.deleteAllByTask_TaskId(taskId);

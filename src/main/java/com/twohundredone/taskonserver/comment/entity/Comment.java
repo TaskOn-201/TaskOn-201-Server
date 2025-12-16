@@ -9,7 +9,6 @@ import lombok.*;
 @Entity
 @Table(name = "comment")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -28,4 +27,8 @@ public class Comment extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id")
     private Task task;
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 }
