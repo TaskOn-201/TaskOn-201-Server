@@ -1,7 +1,7 @@
 package com.twohundredone.taskonserver.project.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.twohundredone.taskonserver.project.entity.Project;
+//import com.fasterxml.jackson.annotation.JsonProperty;
+//import com.twohundredone.taskonserver.project.entity
 import lombok.Builder;
 import lombok.Getter;
 

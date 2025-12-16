@@ -23,6 +23,7 @@ public enum ResponseStatusError {
     TASK_PROJECT_MISMATCH(400, "해당 업무는 이 프로젝트에 속하지 않습니다."),
     INVALID_PAST_DATE_CREATE(400, "시작일과 마감일은 오늘보다 이전일 수 없습니다."),
     INVALID_PAST_DATE_UPDATE(400, "마감일은 오늘보다 이전일 수 없습니다."),
+    CHAT_BAD_REQUEST(400, "잘못된 요청입니다."),
 
     //401 Unauthorized
     PASSWORD_INCORRECT(401, "비밀번호를 확인해주세요."),
@@ -30,6 +31,7 @@ public enum ResponseStatusError {
     INVALID_TOKEN(401, "유효하지 않은 토큰입니다."),
     TOKEN_EXPIRED(401, "토큰이 만료되었습니다."),
     UNAUTHORIZED(401, "인증되지 않은 사용자입니다."),
+    CHAT_UNAUTHORIZED(401, "인증에 실패했습니다."),
 
     //403 Forbidden
     FORBIDDEN(403, "접근 권한이 없습니다."),
@@ -38,7 +40,7 @@ public enum ResponseStatusError {
     TASK_FORBIDDEN(403, "해당 태스크에 대한 접근 권한이 없습니다"),
     ONLY_ASSIGNEE_OR_AUTHOR_CAN_UPDATE(403, "해당 댓글 수정 권한이 없습니다."),
     ONLY_ASSIGNEE_OR_AUTHOR_CAN_DELETE(403, "해당 댓글 삭제 권한이 없습니다."),
-
+    CHAT_FORBIDDEN(403, "해당 채팅방에 접근 권한이 없습니다."),
 
     //404 Not Found
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),
@@ -46,7 +48,7 @@ public enum ResponseStatusError {
     LEADER_NOT_FOUND(404, "리더를 찾을 수 없습니다"),
     TASK_NOT_FOUND(404, "업무를 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(404, "댓글을 찾을 수 없습니다"),
-
+    CHAT_ROOM_NOT_FOUND(404, "채팅방을 찾을 수 없습니다."),
 
     //500 Internal Server Error
     SERVER_ERROR(500, "서버 내부 오류가 발생했습니다."),
