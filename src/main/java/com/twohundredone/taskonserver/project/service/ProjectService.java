@@ -1,6 +1,7 @@
 package com.twohundredone.taskonserver.project.service;
 
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
+import com.twohundredone.taskonserver.comment.repository.CommentRepository;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.dto.*;
@@ -9,6 +10,9 @@ import com.twohundredone.taskonserver.project.entity.ProjectMember;
 import com.twohundredone.taskonserver.project.enums.Role;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
+import com.twohundredone.taskonserver.task.entity.Task;
+import com.twohundredone.taskonserver.task.repository.TaskParticipantRepository;
+import com.twohundredone.taskonserver.task.repository.TaskRepository;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import com.twohundredone.taskonserver.user.service.OnlineStatusService;
@@ -25,6 +29,9 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final OnlineStatusService onlineStatusService;
+    private final TaskRepository taskRepository;
+    private final TaskParticipantRepository taskParticipantRepository;
+    private final CommentRepository commentRepository;
 
     @Transactional
     public ProjectCreateResponse createProject(ProjectCreateRequest request, CustomUserDetails userDetails) {
@@ -183,6 +190,18 @@ public class ProjectService {
         if(!project.getProjectName().equals(request.projectName())){
             throw new CustomException(ResponseStatusError.PROJECT_NAME_NOT_MATCH);
         }
+
+        // 프로젝트에 속한 모든 Task 조회
+        List<Task> tasks = taskRepository.findAllByProject_ProjectId(projectId);
+
+        // 각 Task의 Comment / Participant 삭제
+        for (Task task : tasks) {
+            commentRepository.deleteAllByTask_TaskId(task.getTaskId());
+            taskParticipantRepository.deleteAllByTask_TaskId(task.getTaskId());
+        }
+
+        // Task 삭제
+        taskRepository.deleteAllByProject_ProjectId(projectId);
 
         projectRepository.delete(project);
     }
