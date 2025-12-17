@@ -1,9 +1,11 @@
 package com.twohundredone.taskonserver.chat.config;
 
 import com.twohundredone.taskonserver.auth.jwt.JwtProvider;
+import com.twohundredone.taskonserver.chat.service.ChatService;
+import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
+import com.twohundredone.taskonserver.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessagingException;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Component;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -22,60 +23,82 @@ import java.util.Map;
 public class StompHandler implements ChannelInterceptor {
 
     private final JwtProvider jwtProvider;
+    private final ChatService chatService;
+    private static final String CHAT_ROOM_PREFIX = "/topic/chat/rooms/";
 
     @Override
-    @NonNull
-    public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
+    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+        StompCommand command = accessor.getCommand();
 
-        if (accessor.getCommand() == null) return message;
+        if (command == null) return message;
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            String bearer = getAuthorization(accessor);
+        // 1️⃣ CONNECT → JWT 인증
+        if (StompCommand.CONNECT.equals(command)) {
+            handleConnect(accessor);
+        }
 
-            if (bearer == null || !bearer.startsWith("Bearer ")) {
-                throw new MessagingException("WebSocket 인증 실패: Authorization 누락/형식 오류");
-            }
-
-            String token = bearer.substring("Bearer ".length()).trim();
-            if (token.isEmpty()) throw new MessagingException("WebSocket 인증 실패: 토큰 비어있음");
-
-            try {
-                //  검증 + userId 추출 (REST와 동일 로직)
-                jwtProvider.validateToken(token);
-                Long userId = jwtProvider.getUserId(token);
-
-                // (선택) 세션 저장
-                Map<String, Object> session = accessor.getSessionAttributes();
-                if (session != null) {
-                    session.put("accessToken", token);
-                    session.put("userId", userId);
-                }
-
-                // 핵심: Principal 세팅 → Controller에서 principal.getName() == userId
-                accessor.setUser(new StompPrincipal(String.valueOf(userId)));
-
-                log.info("STOMP CONNECT 인증 성공 userId={}", userId);
-
-            } catch (Exception e) {
-                throw new MessagingException("WebSocket 인증 실패: 유효하지 않은 토큰");
-            }
+        // 2️⃣ SUBSCRIBE → 채팅방 권한 체크
+        if (StompCommand.SUBSCRIBE.equals(command)) {
+            handleSubscribe(accessor);
         }
 
         return message;
     }
 
-    private String getAuthorization(StompHeaderAccessor accessor) {
-        List<String> values = accessor.getNativeHeader("Authorization");
-        if (values == null || values.isEmpty()) return null;
-        return values.getFirst();
+    private void handleConnect(StompHeaderAccessor accessor) {
+        String bearer = getAuthorization(accessor);
+
+        if (bearer == null || !bearer.startsWith("Bearer ")) {
+            throw new MessagingException("WebSocket 인증 실패");
+        }
+
+        String token = bearer.substring("Bearer ".length());
+        jwtProvider.validateToken(token);
+
+        Long userId = jwtProvider.getUserId(token);
+        accessor.setUser(() -> String.valueOf(userId));
+
+        log.info("STOMP CONNECT success userId={}", userId);
     }
 
-    private record StompPrincipal(String name) implements Principal {
+    private void handleSubscribe(StompHeaderAccessor accessor) {
+        Principal principal = accessor.getUser();
+        String destination = accessor.getDestination();
 
-        @Override
-        public String getName() {
-            return name;
+        if (principal == null || destination == null) {
+            throw new MessagingException("구독 인증 실패");
+        }
+
+        if (!destination.startsWith("/topic/chat/rooms/")) {
+            return; // 다른 topic은 허용
+        }
+
+        Long userId = Long.parseLong(principal.getName());
+        Long chatRoomId = extractChatRoomId(destination);
+
+        try {
+            chatService.validateChatRoomAccess(chatRoomId, userId);
+        } catch (CustomException e) {
+            throw new MessagingException("채팅방 구독 권한 없음");
+        }
+    }
+
+    private String getAuthorization(StompHeaderAccessor accessor) {
+        List<String> values = accessor.getNativeHeader("Authorization");
+        return (values == null || values.isEmpty()) ? null : values.getFirst();
+    }
+
+    private Long extractChatRoomId(String destination) {
+        if (destination == null || !destination.startsWith(CHAT_ROOM_PREFIX)) {
+            throw new CustomException(ResponseStatusError.CHAT_BAD_REQUEST);
+        }
+
+        try {
+            return Long.parseLong(destination.substring(CHAT_ROOM_PREFIX.length()));
+        } catch (NumberFormatException e) {
+            throw new CustomException(ResponseStatusError.CHAT_BAD_REQUEST);
         }
     }
 }

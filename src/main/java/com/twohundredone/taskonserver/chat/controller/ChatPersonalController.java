@@ -24,7 +24,7 @@ public class ChatPersonalController {
             @Valid @RequestBody PersonalChatCreateRequest request
     ) {
         Long myUserId = userDetails.getId();
-        Long targetUserId = request.getTargetUserId();
+        Long targetUserId = request.targetUserId();
 
         Long chatRoomId = chatService.createOrGetPersonalChatRoom(myUserId, targetUserId);
 

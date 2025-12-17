@@ -1,8 +1,12 @@
 package com.twohundredone.taskonserver.chat.controller;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.UNAUTHORIZED;
+
 import com.twohundredone.taskonserver.chat.dto.ChatMessageRequest;
 import com.twohundredone.taskonserver.chat.dto.ChatMessageSendResponse;
+import com.twohundredone.taskonserver.chat.dto.StompErrorResponse;
 import com.twohundredone.taskonserver.chat.service.ChatService;
+import com.twohundredone.taskonserver.global.exception.CustomException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -30,19 +34,41 @@ public class ChatStompController {
             @Payload ChatMessageRequest request,
             Principal principal
     ) {
+        // STOMP 레벨 인증 가드
         if (principal == null || principal.getName() == null) {
-            // 인증 안된 연결이면 그냥 막기 (원하면 CustomException으로 바꿔도 됨)
+            messagingTemplate.convertAndSend(
+                    "/queue/errors",
+                    new StompErrorResponse(
+                            UNAUTHORIZED.name(),
+                            UNAUTHORIZED.getMessage()
+                    )
+            );
             return;
         }
 
         Long senderUserId = Long.parseLong(principal.getName());
 
-        ChatMessageSendResponse saved =
-                chatService.saveMessage(chatId, senderUserId, request);
+        try {
+            // 도메인 로직
+            ChatMessageSendResponse saved =
+                    chatService.sendMessage(chatId, senderUserId, request);
 
-        messagingTemplate.convertAndSend(
-                "/topic/chat/rooms/" + chatId,
-                saved
-        );
+            // 정상 브로드캐스트
+            messagingTemplate.convertAndSend(
+                    "/topic/chat/rooms/" + chatId,
+                    saved
+            );
+
+        } catch (CustomException e) {
+            messagingTemplate.convertAndSendToUser(
+                    principal.getName(),
+                    "/queue/errors",
+                    new StompErrorResponse(
+                            e.getStatusError().name(),
+                            e.getMessage()
+                    )
+            );
+        }
     }
+
 }

@@ -70,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/reissue").permitAll()
                         .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
 
                         // 로그아웃은 인증 필요
                         .requestMatchers("/api/auth/logout").authenticated()

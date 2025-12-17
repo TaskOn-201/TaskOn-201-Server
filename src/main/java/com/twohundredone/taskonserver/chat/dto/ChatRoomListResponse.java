@@ -1,30 +1,22 @@
 package com.twohundredone.taskonserver.chat.dto;
 
-import lombok.*;
 
 import java.util.List;
+import lombok.Builder;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
+
 @Builder
-public class ChatRoomListResponse {
-
-    private Long chatRoomId;
-    private String roomName;
-
-    private List<Participant> participants;
-
-    private String lastMessage;
-    private String lastMessageTime; // "5분 전" or "251113T231154"
-    private int unreadCount;
-
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class Participant {
-        private Long userId;
-        private String profileImageUrl;
-    }
+public record ChatRoomListResponse(
+        Long chatRoomId,
+        String roomName,
+        List<Participant> participants,
+        String lastMessage,
+        String lastMessageTime,
+        int unreadCount
+) {
+    public record Participant(
+            Long userId,
+            String profileImageUrl
+    ) {}
 }
+
