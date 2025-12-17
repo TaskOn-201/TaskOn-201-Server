@@ -1,6 +1,8 @@
 package com.twohundredone.taskonserver.chat.config;
 
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -15,19 +17,23 @@ public class StompWebsocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompHandler stompHandler;
 
+    @Value("${frontend.url}")
+    private String frontendUrls;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] allowedOrigins = Arrays.stream(frontendUrls.split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
+
         registry.addEndpoint("/ws/chat")
-                // FE가 4000이라면 여기 수정
-                .setAllowedOriginPatterns("http://localhost:4000")
-                .withSockJS();
+                .setAllowedOriginPatterns(allowedOrigins)
+                .withSockJS(); // 필요 없으면 제거 가능
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // 구독(브로커)
         registry.enableSimpleBroker("/topic", "/queue");
-        // 발행(앱)
         registry.setApplicationDestinationPrefixes("/app");
     }
 

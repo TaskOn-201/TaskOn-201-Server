@@ -9,12 +9,12 @@ import java.util.Optional;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    // ✅ 메시지 목록 (오래된 → 최신)
+    // 메시지 목록 (오래된 → 최신)
     List<ChatMessage> findAllByChatRoom_ChatIdOrderByCreatedAtAsc(Long chatRoomId);
 
-    // ✅ 마지막 메시지 (최신 1건)
+    // 마지막 메시지 (최신 1건)
     Optional<ChatMessage> findTop1ByChatRoom_ChatIdOrderByCreatedAtDesc(Long chatRoomId);
 
-    // ✅ 안읽은 메시지 개수 (lastReadAt 이후)
+    // 안읽은 메시지 개수 (lastReadAt 이후)
     int countByChatRoom_ChatIdAndCreatedAtAfter(Long chatRoomId, LocalDateTime lastReadAt);
 }

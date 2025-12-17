@@ -1,5 +1,6 @@
 package com.twohundredone.taskonserver.chat.entity;
 
+import com.twohundredone.taskonserver.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -18,28 +19,24 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class ChatUser {
+public class ChatUser extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "chat_user_id")
     private Long chatUserId;
 
-    @Column(name = "chat_id", nullable = false)
-    private Long chatId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_id", nullable = false)
+    private ChatRoom chatRoom;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    // 처음 참여 시각을 넣고 싶으면 Service에서 LocalDateTime.now()로 세팅
     @Column(name = "last_read_at", nullable = false)
     private LocalDateTime lastReadAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    public void updateLastReadAt(LocalDateTime time) {
+        this.lastReadAt = time;
+    }
 }
