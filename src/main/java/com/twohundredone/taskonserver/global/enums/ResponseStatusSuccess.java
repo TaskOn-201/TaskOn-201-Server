@@ -30,11 +30,12 @@ public enum ResponseStatusSuccess {
     TASK_DELETE(200, "Task 삭제를 완료했습니다."),
     GET_TASK_BOARD(200, "Task 보드를 조회했습니다."),
     UPDATED_TASK_STATUS(200, "Task 상태 변경이 완료되었습니다."),
-    GET_COMMENT_LIST(200, "댓글 목록 조회 성공"),
-    COMMENT_UPDATE(200, "댓글 수정 완료"),
-    COMMENT_DELETE(200, "댓글 삭제 완료"),
-    CHAT_ROOM_LIST_SUCCESS(200, "채팅방 리스트 조회 성공"),
-    CHAT_MESSAGE_LIST_SUCCESS(200,"메세지조회 성공"),
+    GET_COMMENT_LIST(200, "댓글 목록을 조회했습니다."),
+    COMMENT_UPDATE(200, "댓글 수정을 완료했습니다."),
+    COMMENT_DELETE(200, "댓글 삭제를 완료했습니다."),
+    CHAT_ROOM_LIST_SUCCESS(200, "채팅방 리스트를 조회했습니다."),
+    CHAT_MESSAGE_LIST_SUCCESS(200,"메세지를 조회했습니다."),
+    CHAT_SEARCH_SUCCESS(200, "채팅 검색 결과를 가져왔습니다."),
 
     //201 Created
     SIGNUP_SUCCESS(201, "회원가입을 완료했습니다."),
