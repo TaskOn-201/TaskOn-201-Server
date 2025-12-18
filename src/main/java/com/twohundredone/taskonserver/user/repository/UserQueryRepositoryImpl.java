@@ -82,8 +82,8 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
         String trimmed = keyword.trim();
         if (trimmed.isBlank()) return null;
 
-        return user.name.containsIgnoreCase(keyword)
-                .or(user.email.containsIgnoreCase(keyword));
+        return user.name.containsIgnoreCase(trimmed)
+                .or(user.email.containsIgnoreCase(trimmed));
     }
 
     private BooleanExpression notSelf(Long loginUserId) {
@@ -91,6 +91,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     }
 
     private BooleanExpression notProjectMember(Long projectId) {
+        if (projectId == null) return null;
         return JPAExpressions.selectOne()
                 .from(projectMember)
                 .where(
