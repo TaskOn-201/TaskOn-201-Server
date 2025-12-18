@@ -10,6 +10,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
+
+    boolean existsByChatTypeAndProjectId(ChatType chatType, Long projectId);
+
+    Optional<ChatRoom> findByChatTypeAndProjectId(ChatType chatType, Long projectId);
+
+    boolean existsByChatTypeAndTaskId(ChatType chatType, Long taskId);
+
+    Optional<ChatRoom> findByChatTypeAndTaskId(ChatType chatType, Long taskId);
+
     @Query("""
     select distinct cr
     from ChatRoom cr

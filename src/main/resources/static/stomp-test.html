@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>1:1 STOMP Chat Test</title>
+
+  <!-- SockJS + STOMP -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+  <style>
+    body { font-family: Arial; }
+    input, textarea { width: 600px; margin-bottom: 8px; }
+    button { margin-right: 5px; }
+    pre {
+      background: #111;
+      color: #0f0;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+<h2>1:1 채팅 STOMP 테스트</h2>
+
+<label>JWT Access Token</label><br>
+<input id="token" placeholder="Bearer 없이 토큰만" />
+
+<br>
+
+<label>ChatRoom ID (PERSONAL)</label><br>
+<input id="roomId" placeholder="예: 15" />
+
+<br><br>
+
+<button onclick="connect()">CONNECT</button>
+<button onclick="subscribeRoom()">SUBSCRIBE</button>
+<button onclick="subscribeError()">SUBSCRIBE ERROR</button>
+
+<hr>
+
+<label>Message</label><br>
+<textarea id="message" rows="3" placeholder="보낼 메시지 입력"></textarea><br>
+<button onclick="sendMessage()">SEND</button>
+
+<pre id="log"></pre>
+
+<script>
+  let stompClient = null;
+
+  function log(msg) {
+    const el = document.getElementById("log");
+    el.innerText += msg + "\n";
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function connect() {
+    const token = document.getElementById("token").value;
+    const socket = new SockJS("/ws/chat");
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect(
+        { Authorization: "Bearer " + token },
+        () => log("✅ CONNECTED"),
+        (err) => log("❌ CONNECT ERROR: " + err)
+    );
+  }
+
+  function subscribeRoom() {
+    const roomId = document.getElementById("roomId").value;
+
+    stompClient.subscribe(
+        `/topic/chat/rooms/${roomId}`,
+        (msg) => {
+          log("📩 MESSAGE: " + msg.body);
+        }
+    );
+
+    log("✅ SUBSCRIBED room " + roomId);
+  }
+
+  function subscribeError() {
+    stompClient.subscribe(
+        "/user/queue/errors",
+        (msg) => log("❌ ERROR MESSAGE: " + msg.body)
+    );
+
+    log("✅ SUBSCRIBED error queue");
+  }
+
+  function sendMessage() {
+    const roomId = document.getElementById("roomId").value;
+    const content = document.getElementById("message").value;
+
+    stompClient.send(
+        `/app/chat/rooms/${roomId}`,
+        { "content-type": "application/json" },
+        JSON.stringify({ content })
+    );
+
+    log("📤 SENT: " + content);
+    document.getElementById("message").value = "";
+  }
+</script>
+
+</body>
+</html>

@@ -1,6 +1,11 @@
 package com.twohundredone.taskonserver.project.service;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_FORBIDDEN;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_NOT_FOUND;
+
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
+import com.twohundredone.taskonserver.chat.repository.ChatUnreadQueryRepository;
+import com.twohundredone.taskonserver.chat.service.ChatDomainService;
 import com.twohundredone.taskonserver.comment.repository.CommentRepository;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import com.twohundredone.taskonserver.global.exception.CustomException;
@@ -32,6 +37,8 @@ public class ProjectService {
     private final TaskRepository taskRepository;
     private final TaskParticipantRepository taskParticipantRepository;
     private final CommentRepository commentRepository;
+    private final ChatDomainService chatDomainService;
+    private final ChatUnreadQueryRepository chatUnreadQueryRepository;
 
     @Transactional
     public ProjectCreateResponse createProject(ProjectCreateRequest request, CustomUserDetails userDetails) {
@@ -45,6 +52,7 @@ public class ProjectService {
         project.addLeader(creator);
 
         Project savedProject = projectRepository.save(project);
+        chatDomainService.onProjectCreated(savedProject.getProjectId(), creator.getUserId());
 
         return ProjectCreateResponse.builder()
                 .projectId(savedProject.getProjectId())
@@ -57,10 +65,11 @@ public class ProjectService {
     public ProjectSelectResponse selectProject(Long projectId, CustomUserDetails userDetails) {
         Long userId = userDetails.getId();
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(
+                PROJECT_NOT_FOUND));
 
         ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         return ProjectSelectResponse.builder().project(project).role(projectMember.getRole()).build();
     }
@@ -84,30 +93,42 @@ public class ProjectService {
         Long userId = userDetails.getId();
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(PROJECT_NOT_FOUND));
 
-        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+        projectMemberRepository
+                .findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
-        SidebarInfoResponse.ProjectInfo projectInfo = SidebarInfoResponse.ProjectInfo.builder()
-                .projectId(projectId).projectName(project.getProjectName()).build();
+        SidebarInfoResponse.ProjectInfo projectInfo =
+                SidebarInfoResponse.ProjectInfo.builder()
+                        .projectId(projectId)
+                        .projectName(project.getProjectName())
+                        .build();
 
-        List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
+        List<ProjectMember> projectMembers =
+                projectMemberRepository.findAllByProject_ProjectId(projectId);
 
-        List<SidebarInfoResponse.OnlineUsersInfo> onlineUsers = projectMembers.stream()
-                .map(pm -> {
-                    User u = pm.getUser();
-                    return SidebarInfoResponse.OnlineUsersInfo.builder()
-                            .userId(u.getUserId())
-                            .name(u.getName())
-                            .profileImageUrl(u.getProfileImageUrl())
-                            .isOnline(onlineStatusService.isOnline(u.getUserId())).build();
-                }).toList();
+        List<SidebarInfoResponse.OnlineUsersInfo> onlineUsers =
+                projectMembers.stream()
+                        .map(pm -> {
+                            User u = pm.getUser();
+                            return SidebarInfoResponse.OnlineUsersInfo.builder()
+                                    .userId(u.getUserId())
+                                    .name(u.getName())
+                                    .profileImageUrl(u.getProfileImageUrl())
+                                    .isOnline(onlineStatusService.isOnline(u.getUserId()))
+                                    .build();
+                        })
+                        .toList();
 
-        return SidebarInfoResponse.builder().project(projectInfo)
-                .onlineUsers(onlineUsers).unreadChatCount(5).build();
+        int unreadChatCount =
+                chatUnreadQueryRepository.countUnreadChatsInProject(projectId, userId);
 
-        //TODO: 채팅 관련 서비스 로직 추가 예정
+        return SidebarInfoResponse.builder()
+                .project(projectInfo)
+                .onlineUsers(onlineUsers)
+                .unreadChatCount(unreadChatCount)
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -115,7 +136,7 @@ public class ProjectService {
         Long userId = userDetails.getId();
 
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
 
@@ -135,10 +156,11 @@ public class ProjectService {
     public ProjectSettingsResponseInfo ProjectSettingsResponseInfo(CustomUserDetails userDetails, Long projectId) {
         Long userId = userDetails.getId();
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(
+                PROJECT_NOT_FOUND));
 
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
 
@@ -178,10 +200,11 @@ public class ProjectService {
     @Transactional
     public void deleteProject(CustomUserDetails userDetails, Long projectId, ProjectDeleteRequest request) {
         Long userId = userDetails.getId();
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_NOT_FOUND));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException(
+                PROJECT_NOT_FOUND));
 
         ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ResponseStatusError.PROJECT_FORBIDDEN));
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
         if(projectMember.getRole() != Role.LEADER){
             throw new CustomException(ResponseStatusError.FORBIDDEN);

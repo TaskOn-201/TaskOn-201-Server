@@ -12,6 +12,7 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 import java.security.Principal;
@@ -34,17 +35,28 @@ public class StompHandler implements ChannelInterceptor {
 
         if (command == null) return message;
 
-        // 1️⃣ CONNECT → JWT 인증
+        // 🔥 공통: principal 복구 (SEND / SUBSCRIBE 공통)
+        if (accessor.getUser() == null && accessor.getSessionAttributes() != null) {
+            Object saved = accessor.getSessionAttributes().get("user");
+            if (saved instanceof Principal) {
+                accessor.setUser((Principal) saved);
+            }
+        }
+
         if (StompCommand.CONNECT.equals(command)) {
             handleConnect(accessor);
         }
-
-        // 2️⃣ SUBSCRIBE → 채팅방 권한 체크
-        if (StompCommand.SUBSCRIBE.equals(command)) {
+        else if (StompCommand.SUBSCRIBE.equals(command)) {
             handleSubscribe(accessor);
         }
+        else if (StompCommand.SEND.equals(command)) {
+            log.info("🔥 STOMP SEND intercepted destination={}", accessor.getDestination());
+        }
 
-        return message;
+        return MessageBuilder.createMessage(
+                message.getPayload(),
+                accessor.getMessageHeaders()
+        );
     }
 
     private void handleConnect(StompHeaderAccessor accessor) {
@@ -58,7 +70,14 @@ public class StompHandler implements ChannelInterceptor {
         jwtProvider.validateToken(token);
 
         Long userId = jwtProvider.getUserId(token);
-        accessor.setUser(() -> String.valueOf(userId));
+
+        Principal p = () -> String.valueOf(userId);
+        accessor.setUser(p);
+
+        // 세션에도 박아두면 다음 프레임에서 user가 null이어도 복구 가능
+        if (accessor.getSessionAttributes() != null) {
+            accessor.getSessionAttributes().put("user", p);
+        }
 
         log.info("STOMP CONNECT success userId={}", userId);
     }
@@ -67,9 +86,20 @@ public class StompHandler implements ChannelInterceptor {
         Principal principal = accessor.getUser();
         String destination = accessor.getDestination();
 
-        if (principal == null || destination == null) {
+        // destination 없는 SUBSCRIBE는 STOMP 내부 처리용 → 무시
+        if (destination == null || destination.isBlank()) return;
+
+        if (principal == null && accessor.getSessionAttributes() != null) {
+            Object saved = accessor.getSessionAttributes().get("user");
+            if (saved instanceof Principal) {
+                principal = (Principal) saved;
+            }
+        }
+
+        if (principal == null) {
             throw new MessagingException("구독 인증 실패");
         }
+
 
         if (!destination.startsWith("/topic/chat/rooms/")) {
             return; // 다른 topic은 허용
@@ -78,11 +108,7 @@ public class StompHandler implements ChannelInterceptor {
         Long userId = Long.parseLong(principal.getName());
         Long chatRoomId = extractChatRoomId(destination);
 
-        try {
-            chatService.validateChatRoomAccess(chatRoomId, userId);
-        } catch (CustomException e) {
-            throw new MessagingException("채팅방 구독 권한 없음");
-        }
+        chatService.validateChatRoomAccess(chatRoomId, userId);
     }
 
     private String getAuthorization(StompHeaderAccessor accessor) {

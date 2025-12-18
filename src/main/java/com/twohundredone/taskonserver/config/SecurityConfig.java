@@ -64,6 +64,14 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/stomp-test.html",
+                                "/ws/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico"
+                        ).permitAll()
                         .requestMatchers("/api/auth/signup").permitAll()
                         .requestMatchers("/api/auth/check-email").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()

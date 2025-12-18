@@ -26,9 +26,16 @@ public class StompWebsocketConfig implements WebSocketMessageBrokerConfigurer {
                 .map(String::trim)
                 .toArray(String[]::new);
 
+        // 브라우저용 (SockJS)
         registry.addEndpoint("/ws/chat")
-//                .setAllowedOriginPatterns(allowedOrigins);
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns(allowedOrigins)
+//                .setAllowedOriginPatterns("*")
+                .withSockJS();
+
+        // 테스트 / Postman / 순수 WebSocket용
+        registry.addEndpoint("/ws/chat-ws")
+                .setAllowedOriginPatterns(allowedOrigins);
+//                .setAllowedOriginPatterns("*");
     }
 
     @Override

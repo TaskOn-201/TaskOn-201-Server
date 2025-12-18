@@ -22,47 +22,46 @@ public class ChatRoomQueryRepositoryImpl implements ChatRoomQueryRepository {
 
     @Override
     public List<ChatRoomSummaryDto> findMyChatRoomSummaries(Long userId) {
-
-        // 서브쿼리: 마지막 메시지 시간
-        QChatMessage subMessage = new QChatMessage("subMessage");
+        QChatMessage lastMessage = new QChatMessage("lastMessage");
+        QChatMessage unreadMessage = new QChatMessage("unreadMessage");
 
         return queryFactory
                 .select(Projections.constructor(
                         ChatRoomSummaryDto.class,
                         chatRoom.chatId,
                         chatRoom.chatRoomName,
-                        chatMessage.content,
-                        chatMessage.createdAt,
-                        chatMessage.chatMessageId.count().intValue()
+                        lastMessage.content,
+                        lastMessage.createdAt,
+                        unreadMessage.chatMessageId.count().intValue()
                 ))
                 .from(chatRoom)
-                // 내 채팅방만
                 .join(chatUser).on(
                         chatUser.chatRoom.eq(chatRoom),
                         chatUser.userId.eq(userId)
                 )
                 // 마지막 메시지
-                .leftJoin(chatMessage).on(
-                        chatMessage.chatRoom.eq(chatRoom),
-                        chatMessage.createdAt.eq(
+                .leftJoin(lastMessage).on(
+                        lastMessage.chatRoom.eq(chatRoom),
+                        lastMessage.createdAt.eq(
                                 JPAExpressions
-                                        .select(subMessage.createdAt.max())
-                                        .from(subMessage)
-                                        .where(subMessage.chatRoom.eq(chatRoom))
+                                        .select(lastMessage.createdAt.max())
+                                        .from(lastMessage)
+                                        .where(lastMessage.chatRoom.eq(chatRoom))
                         )
                 )
                 // 안 읽은 메시지
-                .leftJoin(chatMessage).on(
-                        chatMessage.chatRoom.eq(chatRoom),
-                        chatMessage.createdAt.after(chatUser.lastReadAt)
+                .leftJoin(unreadMessage).on(
+                        unreadMessage.chatRoom.eq(chatRoom),
+                        unreadMessage.createdAt.after(chatUser.lastReadAt)
                 )
                 .groupBy(
                         chatRoom.chatId,
                         chatRoom.chatRoomName,
-                        chatMessage.content,
-                        chatMessage.createdAt
+                        lastMessage.content,
+                        lastMessage.createdAt
                 )
                 .orderBy(chatRoom.modifiedAt.desc())
                 .fetch();
+
     }
 }

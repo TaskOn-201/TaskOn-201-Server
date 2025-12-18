@@ -7,6 +7,7 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PR
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.ADD_PROJECT_MEMBER_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.NO_NEW_TEAM_MEMBER;
 
+import com.twohundredone.taskonserver.chat.service.ChatDomainService;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
@@ -32,6 +33,7 @@ public class ProjectMemberService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
+    private final ChatDomainService chatDomainService;
 
     // 팀원 초대
     @Transactional
@@ -71,6 +73,7 @@ public class ProjectMemberService {
         users.forEach(user -> project.addMember(ProjectMember.createMember(user)));
 
         projectRepository.save(project);
+        chatDomainService.onProjectMembersAdded(projectId, targetUserIds);
 
         return ApiResponse.success(
                 ADD_PROJECT_MEMBER_SUCCESS,
@@ -100,6 +103,7 @@ public class ProjectMemberService {
 
         // 4) 삭제 수행
         projectMemberRepository.delete(target);
+        chatDomainService.onProjectMemberRemoved(projectId, targetUserId);
     }
 
     // 프로젝트 접근 권한 검증

@@ -43,3 +43,4 @@ application-local.yml
 *.pem
 
 docker-compose.yml
+stomp-cli.jar
