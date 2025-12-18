@@ -77,7 +77,7 @@ public class ChatService {
         Map<Long, User> userMap = userRepository.findAllById(senderIds).stream()
                 .collect(Collectors.toMap(User::getUserId, u -> u));
 
-        // ✅ 읽음 처리 갱신
+        // 읽음 처리 갱신
         chatUser.updateLastReadAt(LocalDateTime.now());
 
         return messages.stream()

@@ -12,6 +12,7 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TA
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.TASK_PROJECT_MISMATCH;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.USER_NOT_FOUND;
 
+import com.twohundredone.taskonserver.chat.service.ChatDomainService;
 import com.twohundredone.taskonserver.comment.repository.CommentRepository;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.entity.Project;
@@ -52,6 +53,7 @@ public class TaskService {
     private final UserRepository userRepository;
     private final TaskQueryRepository taskQueryRepository;
     private final CommentRepository commentRepository;
+    private final ChatDomainService chatDomainService;
 
     @Transactional
     public TaskCreateResponse createTask(Long loginUserId, Long projectId, TaskCreateRequest request) {
@@ -88,49 +90,52 @@ public class TaskService {
                 .dueDate(request.dueDate())
                 .build();
 
-        taskRepository.save(task);
+        Task savedTask = taskRepository.save(task);
 
-        // === TaskParticipants 생성 === //
+        // === TaskParticipant 생성 ===
+        taskParticipantRepository.save(
+                TaskParticipant.builder()
+                        .task(task)
+                        .user(assignee)
+                        .taskRole(TaskRole.ASSIGNEE)
+                        .build()
+        );
 
-        // Assignee는 무조건 TaskParticipant로 추가
-        TaskParticipant assigneeParticipant = TaskParticipant.builder()
-                .task(task)
-                .user(assignee)
-                .taskRole(TaskRole.ASSIGNEE)
-                .build();
+        List<Long> participantIds =
+                request.participantIds() != null
+                        ? request.participantIds().stream().distinct().toList()
+                        : List.of();
 
-        taskParticipantRepository.save(assigneeParticipant);
-
-        List<Long> participantIds = request.participantIds() != null
-                ? request.participantIds()
-                : List.of();
-        participantIds = participantIds.stream().distinct().toList();
-
-        List<Long> savedParticipantIds = new ArrayList<>();
-
-        // participantIds에 있는 유저들을 추가
         for (Long participantId : participantIds) {
+            if (participantId.equals(loginUserId)) continue;
 
-            // 이미 ASSIGNEE는 위에서 추가했으니 중복 방지
-            if (participantId.equals(loginUserId))
-                continue;
-
-            // 프로젝트 멤버인지 확인
             projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, participantId)
                     .orElseThrow(() -> new CustomException(NOT_PROJECT_MEMBER));
 
             User participant = userRepository.findById(participantId)
                     .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
 
-            TaskParticipant taskParticipant = TaskParticipant.builder()
-                    .task(task)
-                    .user(participant)
-                    .taskRole(TaskRole.PARTICIPANT)
-                    .build();
-
-            taskParticipantRepository.save(taskParticipant);
-            savedParticipantIds.add(participantId);
+            taskParticipantRepository.save(
+                    TaskParticipant.builder()
+                            .task(task)
+                            .user(participant)
+                            .taskRole(TaskRole.PARTICIPANT)
+                            .build()
+            );
         }
+
+        // CHAT: Task 채팅방 생성
+        List<Long> chatParticipantIds =
+                taskParticipantRepository.findAllByTask_TaskId(savedTask.getTaskId())
+                        .stream()
+                        .map(tp -> tp.getUser().getUserId())
+                        .toList();
+
+        chatDomainService.onTaskCreated(savedTask.getTaskId(), chatParticipantIds);
+
+        List<Long> responseParticipantIds = participantIds.stream()
+                .filter(id -> !id.equals(loginUserId))
+                .toList();
 
         return TaskCreateResponse.builder()
                 .taskId(task.getTaskId())
@@ -139,7 +144,7 @@ public class TaskService {
                 .status(task.getStatus())
                 .priority(task.getPriority())
                 .assigneeId(loginUserId)
-                .participantIds(savedParticipantIds)
+                .participantIds(responseParticipantIds)
                 .startDate(task.getStartDate())
                 .dueDate(task.getDueDate())
                 .description(task.getDescription())
@@ -274,6 +279,16 @@ public class TaskService {
         List<TaskParticipant> updatedParticipants =
                 taskParticipantRepository.findAllByTask_TaskId(taskId);
 
+        // CHAT: 참여자 변경 동기화
+        List<Long> updatedChatUserIds = updatedParticipants.stream()
+                .map(tp -> tp.getUser().getUserId())
+                .toList();
+
+        chatDomainService.onTaskParticipantsChanged(
+                taskId,
+                updatedChatUserIds
+        );
+
         // Assignee DTO
         TaskParticipant updatedAssignee = updatedParticipants.stream()
                 .filter(TaskParticipant::isAssignee)
@@ -354,6 +369,9 @@ public class TaskService {
 
         // TaskParticipant 먼저 삭제
         taskParticipantRepository.deleteAllByTask_TaskId(taskId);
+
+        // CHAT: Task 채팅방 정리
+        chatDomainService.onTaskDeleted(taskId);
 
         // Task 삭제
         taskRepository.delete(task);
@@ -436,48 +454,40 @@ public class TaskService {
     }
 
     private void updateTaskParticipants(Task task, Long assigneeId, List<Long> newIds) {
-
         Long projectId = task.getProject().getProjectId();
 
-        // 기존 참여자 전체 삭제
         taskParticipantRepository.deleteAllByTask_TaskId(task.getTaskId());
 
-        // 중복 제거
         if (newIds == null) newIds = List.of();
         newIds = newIds.stream().distinct().toList();
 
-        // Assignee 다시 추가
         User assignee = userRepository.findById(assigneeId)
                 .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
 
-        TaskParticipant assigneePart = TaskParticipant.builder()
-                .task(task)
-                .user(assignee)
-                .taskRole(TaskRole.ASSIGNEE)
-                .build();
+        taskParticipantRepository.save(
+                TaskParticipant.builder()
+                        .task(task)
+                        .user(assignee)
+                        .taskRole(TaskRole.ASSIGNEE)
+                        .build()
+        );
 
-        taskParticipantRepository.save(assigneePart);
-
-        // 새로운 참여자 처리
         for (Long newId : newIds) {
-
-            // assignee 중복 방지
             if (newId.equals(assigneeId)) continue;
 
-            // 프로젝트 멤버인지 검증 추가
             projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, newId)
                     .orElseThrow(() -> new CustomException(NOT_PROJECT_MEMBER));
 
             User user = userRepository.findById(newId)
                     .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
 
-            TaskParticipant taskParticipant = TaskParticipant.builder()
-                    .task(task)
-                    .user(user)
-                    .taskRole(TaskRole.PARTICIPANT)
-                    .build();
-
-            taskParticipantRepository.save(taskParticipant);
+            taskParticipantRepository.save(
+                    TaskParticipant.builder()
+                            .task(task)
+                            .user(user)
+                            .taskRole(TaskRole.PARTICIPANT)
+                            .build()
+            );
         }
     }
 

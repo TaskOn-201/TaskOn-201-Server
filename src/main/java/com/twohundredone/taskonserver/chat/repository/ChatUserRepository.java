@@ -13,4 +13,10 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
     List<ChatUser> findAllByChatRoom_ChatId(Long chatId);
 
     boolean existsByChatRoom_ChatIdAndUserId(Long chatId, Long userId);
+
+    // 채팅방에서 특정 유저 제거
+    void deleteByChatRoom_ChatIdAndUserId(Long chatId, Long userId);
+
+    // 채팅방의 모든 유저 제거
+    void deleteAllByChatRoom_ChatId(Long chatId);
 }

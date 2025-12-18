@@ -41,7 +41,7 @@ public class ChatRestController {
         );
     }
 
-    // ✅ 채팅방 메시지 리스트 조회
+    // 채팅방 메시지 리스트 조회
     @Operation(summary = "채팅 메시지 리스트 조회", description = "특정 채팅방의 메시지 목록을 조회합니다.")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/rooms/{chatRoomId}/messages")

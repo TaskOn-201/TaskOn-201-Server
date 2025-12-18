@@ -17,4 +17,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     // 안읽은 메시지 개수 (lastReadAt 이후)
     int countByChatRoom_ChatIdAndCreatedAtAfter(Long chatRoomId, LocalDateTime lastReadAt);
+
+    // 채팅방의 모든 메시지 삭제
+    void deleteAllByChatRoom_ChatId(Long chatId);
 }

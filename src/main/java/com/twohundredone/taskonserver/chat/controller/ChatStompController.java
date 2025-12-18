@@ -9,6 +9,7 @@ import com.twohundredone.taskonserver.chat.service.ChatService;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Authorization")
@@ -34,6 +36,8 @@ public class ChatStompController {
             @Payload ChatMessageRequest request,
             Principal principal
     ) {
+
+        log.info("🔥 STOMP SEND arrived chatId={}, principal={}", chatId, principal);
         // STOMP 레벨 인증 가드
         if (principal == null || principal.getName() == null) {
             messagingTemplate.convertAndSend(
