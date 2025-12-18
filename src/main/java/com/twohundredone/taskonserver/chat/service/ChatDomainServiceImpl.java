@@ -9,6 +9,7 @@ import com.twohundredone.taskonserver.chat.enums.ChatType;
 import com.twohundredone.taskonserver.chat.repository.ChatMessageRepository;
 import com.twohundredone.taskonserver.chat.repository.ChatRoomRepository;
 import com.twohundredone.taskonserver.chat.repository.ChatUserRepository;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class ChatDomainServiceImpl implements ChatDomainService {
                 ChatUser.builder()
                         .chatRoom(room)
                         .userId(leaderUserId)
+                        .lastReadAt(LocalDateTime.now())
                         .build()
         );
     }
@@ -55,6 +57,7 @@ public class ChatDomainServiceImpl implements ChatDomainService {
                         ChatUser.builder()
                                 .chatRoom(room)
                                 .userId(userId)
+                                .lastReadAt(LocalDateTime.now())
                                 .build()
                 );
             }
@@ -99,6 +102,7 @@ public class ChatDomainServiceImpl implements ChatDomainService {
                         ChatUser.builder()
                                 .chatRoom(room)
                                 .userId(userId)
+                                .lastReadAt(LocalDateTime.now())
                                 .build()
                 )
         );
@@ -138,6 +142,7 @@ public class ChatDomainServiceImpl implements ChatDomainService {
                         ChatUser.builder()
                                 .chatRoom(room)
                                 .userId(id)
+                                .lastReadAt(LocalDateTime.now())
                                 .build()
                 ));
 

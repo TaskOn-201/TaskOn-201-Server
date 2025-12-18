@@ -5,6 +5,7 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.common.dto.SliceResponse;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
+import com.twohundredone.taskonserver.project.service.ProjectUserSearchService;
 import com.twohundredone.taskonserver.user.dto.UserSearchResponse;
 import com.twohundredone.taskonserver.user.service.UserSearchService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserSearchController {
 
-    private final UserSearchService userSearchService;
+    private final ProjectUserSearchService projectUserSearchService;
 
     @Operation(summary = "사용자 검색 - 프로젝트", description = "프로젝트 사용자 검색 API")
     @SecurityRequirement(name = "Authorization")
@@ -39,7 +40,7 @@ public class UserSearchController {
             @PageableDefault(size = 20) Pageable pageable
     )  {
         Slice<UserSearchResponse> response =
-                userSearchService.search(userDetails.getId(), projectId, keyword, pageable);
+                projectUserSearchService.search(userDetails.getId(), projectId, keyword, pageable);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
