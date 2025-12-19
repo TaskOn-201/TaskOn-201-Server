@@ -29,12 +29,12 @@ public class ChatDomainServiceImpl implements ChatDomainService {
     /* ================= Project ================= */
 
     @Override
-    public void onProjectCreated(Long projectId, Long leaderUserId) {
+    public void onProjectCreated(Long projectId, String projectName, Long leaderUserId) {
         ChatRoom room = chatRoomRepository.save(
                 ChatRoom.builder()
                         .chatType(PROJECT_GROUP)
                         .projectId(projectId)
-                        .chatRoomName("PROJECT-" + projectId)
+                        .chatRoomName(projectName)
                         .build()
         );
 
@@ -79,7 +79,7 @@ public class ChatDomainServiceImpl implements ChatDomainService {
     /* ================= Task ================= */
 
     @Override
-    public void onTaskCreated(Long taskId, List<Long> participantUserIds) {
+    public void onTaskCreated(Long taskId, String taskTitle, List<Long> participantUserIds) {
         if (chatRoomRepository.existsByChatTypeAndTaskId(TASK_GROUP, taskId)) {
             ChatRoom room = chatRoomRepository
                     .findByChatTypeAndTaskId(TASK_GROUP, taskId)
@@ -93,7 +93,7 @@ public class ChatDomainServiceImpl implements ChatDomainService {
                 ChatRoom.builder()
                         .chatType(TASK_GROUP)
                         .taskId(taskId)
-                        .chatRoomName("TASK-" + taskId)
+                        .chatRoomName(taskTitle)
                         .build()
         );
 

@@ -52,7 +52,7 @@ public class ProjectService {
         project.addLeader(creator);
 
         Project savedProject = projectRepository.save(project);
-        chatDomainService.onProjectCreated(savedProject.getProjectId(), creator.getUserId());
+        chatDomainService.onProjectCreated(savedProject.getProjectId(), savedProject.getProjectName(), creator.getUserId());
 
         return ProjectCreateResponse.builder()
                 .projectId(savedProject.getProjectId())
