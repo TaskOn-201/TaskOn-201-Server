@@ -46,10 +46,46 @@ public class ChatService {
         List<ChatRoomSummaryDto> summaries =
                 chatRoomQueryRepository.findMyChatRoomSummaries(userId);
 
+        // 1) roomIds 수집
+        List<Long> roomIds = summaries.stream()
+                .map(ChatRoomSummaryDto::chatRoomId)
+                .toList();
+
+        // 방이 없으면 바로 반환
+        if (roomIds.isEmpty()) return List.of();
+
+        // chat_user를 roomIds로 한번에 조회
+        List<ChatUser> chatUsers = chatUserRepository.findAllByChatRoom_ChatIdIn(roomIds);
+
+        // userIds 수집 후 user 테이블 한번에 조회
+        Set<Long> participantUserIds = chatUsers.stream()
+                .map(ChatUser::getUserId)
+                .collect(Collectors.toSet());
+
+        Map<Long, User> userMap = userRepository.findAllById(participantUserIds).stream()
+                .collect(Collectors.toMap(User::getUserId, u -> u));
+
+        // roomId -> participants 리스트로 그룹핑
+        Map<Long, List<ChatRoomListResponse.Participant>> participantsByRoomId =
+                chatUsers.stream()
+                        .filter(cu -> !cu.getUserId().equals(userId))
+                        .collect(Collectors.groupingBy(
+                                cu -> cu.getChatRoom().getChatId(),
+                                Collectors.mapping(cu -> {
+                                    User u = userMap.get(cu.getUserId());
+                                    return new ChatRoomListResponse.Participant(
+                                            cu.getUserId(),
+                                            u != null ? u.getProfileImageUrl() : null
+                                    );
+                                }, Collectors.toList())
+                        ));
+
+        // DTO 조립 (participants null 방지: emptyList)
         return summaries.stream()
                 .map(dto -> ChatRoomListResponse.builder()
                         .chatRoomId(dto.chatRoomId())
                         .roomName(dto.roomName())
+                        .participants(participantsByRoomId.getOrDefault(dto.chatRoomId(), List.of()))
                         .lastMessage(dto.lastMessage())
                         .lastMessageTime(
                                 dto.lastMessageAt() != null

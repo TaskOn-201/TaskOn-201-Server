@@ -131,7 +131,7 @@ public class TaskService {
                         .map(tp -> tp.getUser().getUserId())
                         .toList();
 
-        chatDomainService.onTaskCreated(savedTask.getTaskId(), chatParticipantIds);
+        chatDomainService.onTaskCreated(savedTask.getTaskId(), savedTask.getTaskTitle(), chatParticipantIds);
 
         List<Long> responseParticipantIds = participantIds.stream()
                 .filter(id -> !id.equals(loginUserId))
