@@ -135,7 +135,7 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new CustomException(CHAT_ROOM_NOT_FOUND));
 
-        getOrCreateChatUser(chatRoomId, senderId);
+        ChatUser chatUser = getOrCreateChatUser(chatRoomId, senderId);
 
         ChatMessage saved = chatMessageRepository.save(
                 ChatMessage.builder()
@@ -144,6 +144,9 @@ public class ChatService {
                         .content(request.content())
                         .build()
         );
+
+        // 내가 보낸 메시지는 즉시 읽음 처리
+        chatUser.updateLastReadAt(saved.getCreatedAt());
 
         return ChatMessageSendResponse.builder()
                 .messageId(saved.getChatMessageId())
