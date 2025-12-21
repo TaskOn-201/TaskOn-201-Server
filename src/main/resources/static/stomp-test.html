@@ -38,6 +38,7 @@
 <button onclick="connect()">CONNECT</button>
 <button onclick="subscribeRoom()">SUBSCRIBE</button>
 <button onclick="subscribeError()">SUBSCRIBE ERROR</button>
+<button onclick="subscribeRoomList()">SUBSCRIBE ROOM LIST</button>
 
 <hr>
 
@@ -63,7 +64,13 @@
 
     stompClient.connect(
         { Authorization: "Bearer " + token },
-        () => log("✅ CONNECTED"),
+        () => {
+          log("✅ CONNECTED");
+
+          // 🔥 여기서 바로 구독
+          subscribeError();
+          subscribeRoomList();
+        },
         (err) => log("❌ CONNECT ERROR: " + err)
     );
   }
@@ -88,6 +95,17 @@
     );
 
     log("✅ SUBSCRIBED error queue");
+  }
+
+  function subscribeRoomList() {
+    stompClient.subscribe(
+        "/user/queue/chat/rooms",
+        (msg) => {
+          log("🟡 ROOM LIST UPDATE: " + msg.body);
+        }
+    );
+
+    log("✅ SUBSCRIBED room list updates");
   }
 
   function sendMessage() {

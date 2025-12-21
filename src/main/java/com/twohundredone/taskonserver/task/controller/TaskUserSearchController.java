@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskUserSearchController {
     private final TaskUserSearchService taskUserSearchService;
 
-    @Operation(summary = "업무 배정 사용자 검색", description = "업무 생성/수정 시 배정 가능한 프로젝트 멤버 검색 API")
+    @Operation(summary = "사용자 검색 - 업무 배정", description = "업무 생성/수정 시 배정 가능한 프로젝트 멤버 검색 API")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<SliceResponse<TaskUserSearchResponse>>> search(

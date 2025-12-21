@@ -4,10 +4,13 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.UN
 
 import com.twohundredone.taskonserver.chat.dto.ChatMessageRequest;
 import com.twohundredone.taskonserver.chat.dto.ChatMessageSendResponse;
+import com.twohundredone.taskonserver.chat.dto.ChatRoomUpdateEvent;
 import com.twohundredone.taskonserver.chat.dto.StompErrorResponse;
 import com.twohundredone.taskonserver.chat.service.ChatService;
+import com.twohundredone.taskonserver.chat.util.ChatTimeFormatter;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -62,6 +65,32 @@ public class ChatStompController {
                     "/topic/chat/rooms/" + chatId,
                     saved
             );
+
+            // 채팅방 리스트 실시간 갱신 이벤트
+            List<Long> participantIds =
+                    chatService.getParticipantUserIds(chatId);
+
+            for (Long userId : participantIds) {
+                log.info(
+                        "🟡 [ROOM-LIST] try send to userId={} (sender={})",
+                        userId,
+                        senderUserId
+                );
+                // 보낸 사람 본인은 제외
+                if (!userId.equals(senderUserId)) {
+                    messagingTemplate.convertAndSendToUser(
+                            String.valueOf(userId),
+                            "/queue/chat/rooms",
+                            ChatRoomUpdateEvent.builder()
+                                    .chatRoomId(chatId)
+                                    .lastMessage(saved.content())
+                                    .lastMessageTime(
+                                            ChatTimeFormatter.toDisplayTime(saved.createdAt())
+                                    )
+                                    .build()
+                    );
+                }
+            }
 
         } catch (CustomException e) {
             messagingTemplate.convertAndSendToUser(

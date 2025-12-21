@@ -18,7 +18,6 @@ public class ChatRoomQueryRepositoryImpl implements ChatRoomQueryRepository {
 
     QChatRoom chatRoom = QChatRoom.chatRoom;
     QChatUser chatUser = QChatUser.chatUser;
-    QChatMessage chatMessage = QChatMessage.chatMessage;
 
     @Override
     public List<ChatRoomSummaryDto> findMyChatRoomSummaries(Long userId) {
@@ -28,11 +27,12 @@ public class ChatRoomQueryRepositoryImpl implements ChatRoomQueryRepository {
         return queryFactory
                 .select(Projections.constructor(
                         ChatRoomSummaryDto.class,
-                        chatRoom.chatId,
-                        chatRoom.chatRoomName,
-                        lastMessage.content,
-                        lastMessage.createdAt,
-                        unreadMessage.chatMessageId.count().intValue()
+                        chatRoom.chatId,            // chatRoomId
+                        chatRoom.chatRoomName,      // roomName
+                        chatRoom.chatType,          // chatType
+                        lastMessage.content,        // lastMessage
+                        lastMessage.createdAt,      // lastMessageAt (원본 시간)
+                        unreadMessage.chatMessageId.count().intValue() // unreadCount
                 ))
                 .from(chatRoom)
                 .join(chatUser).on(
@@ -57,11 +57,11 @@ public class ChatRoomQueryRepositoryImpl implements ChatRoomQueryRepository {
                 .groupBy(
                         chatRoom.chatId,
                         chatRoom.chatRoomName,
+                        chatRoom.chatType,
                         lastMessage.content,
                         lastMessage.createdAt
                 )
                 .orderBy(chatRoom.modifiedAt.desc())
                 .fetch();
-
     }
 }
