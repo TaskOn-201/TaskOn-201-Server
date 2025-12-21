@@ -23,6 +23,7 @@ import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -75,6 +77,7 @@ public class ChatService {
                                     User u = userMap.get(cu.getUserId());
                                     return new ChatRoomListResponse.Participant(
                                             cu.getUserId(),
+                                            u != null ? u.getName() : null,
                                             u != null ? u.getProfileImageUrl() : null
                                     );
                                 }, Collectors.toList())
@@ -82,18 +85,38 @@ public class ChatService {
 
         // DTO 조립 (participants null 방지: emptyList)
         return summaries.stream()
-                .map(dto -> ChatRoomListResponse.builder()
-                        .chatRoomId(dto.chatRoomId())
-                        .roomName(dto.roomName())
-                        .participants(participantsByRoomId.getOrDefault(dto.chatRoomId(), List.of()))
-                        .lastMessage(dto.lastMessage())
-                        .lastMessageTime(
-                                dto.lastMessageAt() != null
-                                        ? ChatTimeFormatter.toDisplayTime(dto.lastMessageAt())
-                                        : null
-                        )
-                        .unreadCount(dto.unreadCount())
-                        .build())
+                .map(dto -> {
+
+                    List<ChatRoomListResponse.Participant> participants =
+                            participantsByRoomId.getOrDefault(dto.chatRoomId(), List.of());
+
+                    String roomName;
+
+                    if (dto.chatType() == PERSONAL) {
+                        // 1:1 채팅 → 상대방 이름
+                        roomName = participants.isEmpty()
+                                ? "알 수 없는 사용자"
+                                : participants.get(0).name();
+                    } else {
+                        // PROJECT / TASK → 기존 roomName 사용
+                        roomName = dto.roomName();
+                    }
+
+                    return ChatRoomListResponse.builder()
+                            .chatRoomId(dto.chatRoomId())
+                            .roomName(roomName)
+                            .chatType(dto.chatType())
+                            .participants(participants)
+                            .lastMessage(dto.lastMessage())
+                            .lastMessageTime(
+                                    dto.lastMessageAt() != null
+                                            ? ChatTimeFormatter.toDisplayTime(dto.lastMessageAt())
+                                            : null
+                            )
+                            .lastMessageAt(dto.lastMessageAt())
+                            .unreadCount(dto.unreadCount())
+                            .build();
+                })
                 .toList();
     }
 
@@ -154,6 +177,7 @@ public class ChatService {
                 .senderId(senderId)
                 .content(saved.getContent())
                 .sentTime(ChatTimeFormatter.toSentTime(saved.getCreatedAt()))
+                .createdAt(saved.getCreatedAt())
                 .build();
     }
 
@@ -279,6 +303,24 @@ public class ChatService {
         if (!allowed) {
             throw new CustomException(CHAT_FORBIDDEN);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getParticipantUserIds(Long chatRoomId) {
+//        return chatUserRepository.findAllByChatRoom_ChatId(chatRoomId)
+//                .stream()
+//                .map(ChatUser::getUserId)
+//                .toList();
+
+        List<Long> ids = chatUserRepository.findAllByChatRoom_ChatId(chatRoomId)
+                .stream()
+                .map(ChatUser::getUserId)
+                .toList();
+
+        log.info("🟡 [ROOM-LIST] DB participants for chatRoomId={} -> {}",
+                chatRoomId, ids);
+
+        return ids;
     }
 
 }

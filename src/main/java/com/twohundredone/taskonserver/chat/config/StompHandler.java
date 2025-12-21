@@ -86,13 +86,14 @@ public class StompHandler implements ChannelInterceptor {
         Principal principal = accessor.getUser();
         String destination = accessor.getDestination();
 
-        // destination 없는 SUBSCRIBE는 STOMP 내부 처리용 → 무시
         if (destination == null || destination.isBlank()) return;
 
+        // 🔥 principal 복구 보장
         if (principal == null && accessor.getSessionAttributes() != null) {
             Object saved = accessor.getSessionAttributes().get("user");
             if (saved instanceof Principal) {
                 principal = (Principal) saved;
+                accessor.setUser(principal); // 🔥 중요
             }
         }
 
@@ -100,15 +101,23 @@ public class StompHandler implements ChannelInterceptor {
             throw new MessagingException("구독 인증 실패");
         }
 
-
-        if (!destination.startsWith("/topic/chat/rooms/")) {
-            return; // 다른 topic은 허용
+        // 🔥 user queue 는 인증만 통과하면 OK
+        if (destination.startsWith("/user/queue/")) {
+            log.info(
+                    "🟡 [SUBSCRIBE] user queue subscribe userId={}, destination={}",
+                    principal.getName(),
+                    destination
+            );
+            return;
         }
 
-        Long userId = Long.parseLong(principal.getName());
-        Long chatRoomId = extractChatRoomId(destination);
+        // 채팅방 topic만 접근 권한 검증
+        if (destination.startsWith("/topic/chat/rooms/")) {
+            Long userId = Long.parseLong(principal.getName());
+            Long chatRoomId = extractChatRoomId(destination);
 
-        chatService.validateChatRoomAccess(chatRoomId, userId);
+            chatService.validateChatRoomAccess(chatRoomId, userId);
+        }
     }
 
     private String getAuthorization(StompHeaderAccessor accessor) {
