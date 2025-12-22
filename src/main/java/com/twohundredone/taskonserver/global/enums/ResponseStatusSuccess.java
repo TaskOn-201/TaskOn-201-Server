@@ -37,6 +37,7 @@ public enum ResponseStatusSuccess {
     CHAT_MESSAGE_LIST_SUCCESS(200,"메세지를 조회했습니다."),
     CHAT_SEARCH_SUCCESS(200, "채팅 검색 결과를 가져왔습니다."),
     SUCCESS_DELETE_USER(200, "회원 탈퇴가 완료되었습니다."),
+    GET_USER_PROFILE_SUCCESS(200, "사용자 정보를 조회했습니다."),
 
 
     //201 Created

@@ -1,6 +1,7 @@
 package com.twohundredone.taskonserver.user.controller;
 
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_MY_INFO;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.GET_USER_PROFILE_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.MODIFY_MY_INFO_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.SELECTED_USER_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.UPDATE_PASSWORD_SUCCESS;
@@ -11,6 +12,7 @@ import com.twohundredone.taskonserver.user.dto.UserMeResponse;
 import com.twohundredone.taskonserver.user.dto.UserPasswordUpdateRequest;
 import com.twohundredone.taskonserver.user.dto.UserProfileResponse;
 import com.twohundredone.taskonserver.user.dto.UserProfileUpdateRequest;
+import com.twohundredone.taskonserver.user.dto.UserProfileWithProjectsResponse;
 import com.twohundredone.taskonserver.user.dto.UserSearchResponse;
 import com.twohundredone.taskonserver.user.service.UserSearchService;
 import com.twohundredone.taskonserver.user.service.UserService;
@@ -25,6 +27,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -89,6 +92,22 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(SELECTED_USER_SUCCESS, response)
+        );
+    }
+
+
+    @Operation(summary = "사용자 프로필 조회", description = "채팅 화면에서 사용자 프로필 클릭 시 해당 사용자의 정보를 조회한다.")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserProfileWithProjectsResponse>> getUserProfile(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long userId
+    ) {
+        UserProfileWithProjectsResponse response =
+                userService.getUserProfile(userDetails.getId(), userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(GET_USER_PROFILE_SUCCESS, response)
         );
     }
 }
