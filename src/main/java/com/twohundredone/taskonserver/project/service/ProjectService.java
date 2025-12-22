@@ -226,6 +226,9 @@ public class ProjectService {
         // Task 삭제
         taskRepository.deleteAllByProject_ProjectId(projectId);
 
+        // Project 채팅방 삭제
+        chatDomainService.onProjectDeleted(projectId);
+
         projectRepository.delete(project);
     }
 }

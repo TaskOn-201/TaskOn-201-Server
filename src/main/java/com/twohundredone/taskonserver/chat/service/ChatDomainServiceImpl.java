@@ -9,6 +9,8 @@ import com.twohundredone.taskonserver.chat.enums.ChatType;
 import com.twohundredone.taskonserver.chat.repository.ChatMessageRepository;
 import com.twohundredone.taskonserver.chat.repository.ChatRoomRepository;
 import com.twohundredone.taskonserver.chat.repository.ChatUserRepository;
+import com.twohundredone.taskonserver.user.entity.User;
+import com.twohundredone.taskonserver.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +27,7 @@ public class ChatDomainServiceImpl implements ChatDomainService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatUserRepository chatUserRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final UserRepository userRepository;
 
     /* ================= Project ================= */
 
@@ -51,7 +54,12 @@ public class ChatDomainServiceImpl implements ChatDomainService {
     public void onProjectMembersAdded(Long projectId, List<Long> userIds) {
         ChatRoom room = findProjectRoom(projectId);
 
-        userIds.forEach(userId -> {
+        // 방어 로직
+        List<Long> existingUserIds = userRepository.findAllById(userIds).stream()
+                .map(User::getUserId)
+                .toList();
+
+        existingUserIds.forEach(userId -> {
             if (!chatUserRepository.existsByChatRoom_ChatIdAndUserId(room.getChatId(), userId)) {
                 chatUserRepository.save(
                         ChatUser.builder()
