@@ -78,6 +78,12 @@ public class ChatStompController {
                 );
                 // 보낸 사람 본인은 제외
                 if (!userId.equals(senderUserId)) {
+                    log.info(
+                            "🟥 [ROOM-LIST SEND] toUser={}, chatRoomId={}, lastMessage={}",
+                            userId,
+                            chatId,
+                            saved.content()
+                    );
                     messagingTemplate.convertAndSendToUser(
                             String.valueOf(userId),
                             "/queue/chat/rooms",
