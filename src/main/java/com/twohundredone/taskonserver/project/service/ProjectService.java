@@ -1,7 +1,10 @@
 package com.twohundredone.taskonserver.project.service;
 
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.FORBIDDEN;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_FORBIDDEN;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_NAME_NOT_MATCH;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_NOT_FOUND;
+import static com.twohundredone.taskonserver.project.enums.Role.LEADER;
 
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.chat.repository.ChatUnreadQueryRepository;
@@ -165,7 +168,7 @@ public class ProjectService {
         List<ProjectMember> projectMembers = projectMemberRepository.findAllByProject_ProjectId(projectId);
 
         ProjectMember leaderMember = projectMembers.stream()
-                .filter(pm -> pm.getRole().equals(Role.LEADER))
+                .filter(pm -> pm.getRole().equals(LEADER))
                 .findFirst()
                 .orElseThrow(() -> new CustomException(ResponseStatusError.LEADER_NOT_FOUND));
 
@@ -206,12 +209,12 @@ public class ProjectService {
         ProjectMember projectMember = projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
                 .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
-        if(projectMember.getRole() != Role.LEADER){
-            throw new CustomException(ResponseStatusError.FORBIDDEN);
+        if(projectMember.getRole() != LEADER){
+            throw new CustomException(FORBIDDEN);
         }
 
         if(!project.getProjectName().equals(request.projectName())){
-            throw new CustomException(ResponseStatusError.PROJECT_NAME_NOT_MATCH);
+            throw new CustomException(PROJECT_NAME_NOT_MATCH);
         }
 
         // 프로젝트에 속한 모든 Task 조회
@@ -221,6 +224,7 @@ public class ProjectService {
         for (Task task : tasks) {
             commentRepository.deleteAllByTask_TaskId(task.getTaskId());
             taskParticipantRepository.deleteAllByTask_TaskId(task.getTaskId());
+            chatDomainService.onTaskDeleted(task.getTaskId());
         }
 
         // Task 삭제
