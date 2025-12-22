@@ -30,4 +30,26 @@ public class ProjectMemberQueryRepository {
         );
     }
 
+    // 두 유저가 공통 프로젝트를 가지고 있는지 여부
+    public boolean existsCommonProject(Long loginUserId, Long targetUserId) {
+
+        QProjectMember pm1 = QProjectMember.projectMember;
+        QProjectMember pm2 = new QProjectMember("pm2");
+
+        return queryFactory
+                .selectOne()
+                .from(pm1)
+                .where(
+                        pm1.user.userId.eq(loginUserId),
+                        pm1.project.projectId.in(
+                                com.querydsl.jpa.JPAExpressions
+                                        .select(pm2.project.projectId)
+                                        .from(pm2)
+                                        .where(pm2.user.userId.eq(targetUserId))
+                        )
+                )
+                .fetchFirst() != null;
+    }
+
+
 }

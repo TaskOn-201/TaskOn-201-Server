@@ -43,6 +43,7 @@ public enum ResponseStatusError {
     ONLY_ASSIGNEE_OR_AUTHOR_CAN_UPDATE(403, "해당 댓글 수정 권한이 없습니다."),
     ONLY_ASSIGNEE_OR_AUTHOR_CAN_DELETE(403, "해당 댓글 삭제 권한이 없습니다."),
     CHAT_FORBIDDEN(403, "해당 채팅방에 접근 권한이 없습니다."),
+    USER_PROFILE_ACCESS_DENIED(403, "해당 사용자의 프로필을 조회할 권한이 없습니다."),
 
     //404 Not Found
     USER_NOT_FOUND(404, "사용자 정보를 찾을 수 없습니다."),

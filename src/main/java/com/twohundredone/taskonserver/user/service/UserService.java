@@ -3,16 +3,20 @@ package com.twohundredone.taskonserver.user.service;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PASSWORD_INCORRECT;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PASSWORD_INCORRECT_MISMATCH;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.USER_NOT_FOUND;
+import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.USER_PROFILE_ACCESS_DENIED;
 
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.global.s3.S3Uploader;
 import com.twohundredone.taskonserver.global.util.FileValidator;
 import com.twohundredone.taskonserver.project.entity.ProjectMember;
+import com.twohundredone.taskonserver.project.repository.ProjectMemberQueryRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.user.dto.UserMeResponse;
 import com.twohundredone.taskonserver.user.dto.UserPasswordUpdateRequest;
 import com.twohundredone.taskonserver.user.dto.UserProfileResponse;
 import com.twohundredone.taskonserver.user.dto.UserProfileUpdateRequest;
+import com.twohundredone.taskonserver.user.dto.UserProfileWithProjectsResponse;
+import com.twohundredone.taskonserver.user.dto.UserProfileWithProjectsResponse.UserProjectResponse;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import java.util.List;
@@ -33,6 +37,7 @@ public class UserService {
     private final S3Uploader s3Uploader;
     private final PasswordEncoder passwordEncoder;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectMemberQueryRepository projectMemberQueryRepository;
 
     @Transactional
     public UserProfileResponse updateProfile(Long userId, UserProfileUpdateRequest request, MultipartFile profileImage) {
@@ -100,5 +105,40 @@ public class UserService {
         }
 
         user.updatePassword(passwordEncoder.encode(request.newPassword()));
+    }
+
+    @Transactional(readOnly = true)
+    public UserProfileWithProjectsResponse getUserProfile(Long loginUserId, Long targetUserId) {
+
+        User user = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
+
+        if (!loginUserId.equals(targetUserId)) {
+
+            boolean hasCommonProject =
+                    projectMemberQueryRepository.existsCommonProject(loginUserId, targetUserId);
+
+            if (!hasCommonProject) {
+                throw new CustomException(USER_PROFILE_ACCESS_DENIED);
+            }
+        }
+
+        List<UserProjectResponse> projects =
+                projectMemberRepository.findAllByUser_UserId(targetUserId)
+                        .stream()
+                        .map(pm -> UserProfileWithProjectsResponse.UserProjectResponse.builder()
+                                .projectId(pm.getProject().getProjectId())
+                                .projectName(pm.getProject().getProjectName())
+                                .build()
+                        )
+                        .toList();
+
+        return UserProfileWithProjectsResponse.builder()
+                .userId(user.getUserId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .profileImageUrl(user.getProfileImageUrl())
+                .projects(projects)
+                .build();
     }
 }
