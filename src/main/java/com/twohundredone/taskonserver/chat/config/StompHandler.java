@@ -50,7 +50,12 @@ public class StompHandler implements ChannelInterceptor {
             handleSubscribe(accessor);
         }
         else if (StompCommand.SEND.equals(command)) {
-            log.info("🔥 STOMP SEND intercepted destination={}", accessor.getDestination());
+            log.info(
+                    "🟣 [SEND FRAME] sessionId={}, principal={}, destination={}",
+                    accessor.getSessionId(),
+                    accessor.getUser() != null ? accessor.getUser().getName() : null,
+                    accessor.getDestination()
+            );
         }
 
         return MessageBuilder.createMessage(
@@ -79,7 +84,12 @@ public class StompHandler implements ChannelInterceptor {
             accessor.getSessionAttributes().put("user", p);
         }
 
-        log.info("STOMP CONNECT success userId={}", userId);
+        // 추가 로그
+        log.info(
+                "🟢 [CONNECT] sessionId={}, principal={}",
+                accessor.getSessionId(),
+                accessor.getUser().getName()
+        );
     }
 
     private void handleSubscribe(StompHeaderAccessor accessor) {
@@ -104,7 +114,8 @@ public class StompHandler implements ChannelInterceptor {
         // 🔥 user queue 는 인증만 통과하면 OK
         if (destination.startsWith("/user/queue/")) {
             log.info(
-                    "🟡 [SUBSCRIBE] user queue subscribe userId={}, destination={}",
+                    "🟡 [SUBSCRIBE USER QUEUE] sessionId={}, userId={}, destination={}",
+                    accessor.getSessionId(),
                     principal.getName(),
                     destination
             );
@@ -115,6 +126,14 @@ public class StompHandler implements ChannelInterceptor {
         if (destination.startsWith("/topic/chat/rooms/")) {
             Long userId = Long.parseLong(principal.getName());
             Long chatRoomId = extractChatRoomId(destination);
+
+            log.info(
+                    "🔵 [SUBSCRIBE ROOM] userId={}, chatRoomId={}, destination={}",
+                    userId,
+                    chatRoomId,
+                    destination
+            );
+
 
             chatService.validateChatRoomAccess(chatRoomId, userId);
         }
