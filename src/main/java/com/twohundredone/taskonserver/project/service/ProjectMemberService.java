@@ -68,12 +68,20 @@ public class ProjectMemberService {
 
         // 유저 엔티티 조회
         List<User> users = userRepository.findAllById(targetUserIds);
+        List<Long> validUserIds = users.stream()
+                .map(User::getUserId)
+                .toList();
+
+        // 요청 ID 중 존재하지 않는 유저가 있다면 에러
+        if (validUserIds.size() != targetUserIds.size()) {
+            throw new CustomException(ResponseStatusError.USER_NOT_FOUND);
+        }
 
         // 새 ProjectMember 생성
         users.forEach(user -> project.addMember(ProjectMember.createMember(user)));
 
         projectRepository.save(project);
-        chatDomainService.onProjectMembersAdded(projectId, targetUserIds);
+        chatDomainService.onProjectMembersAdded(projectId, validUserIds);
 
         return ApiResponse.success(
                 ADD_PROJECT_MEMBER_SUCCESS,
