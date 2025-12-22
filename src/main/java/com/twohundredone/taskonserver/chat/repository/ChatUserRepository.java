@@ -21,4 +21,6 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
     // 채팅방의 모든 유저 제거
     void deleteAllByChatRoom_ChatId(Long chatId);
+
+    void deleteAllByUserId(Long userId);
 }

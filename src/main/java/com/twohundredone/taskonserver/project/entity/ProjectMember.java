@@ -62,6 +62,10 @@ public class ProjectMember extends BaseEntity {
                 .build();
     }
 
+    public void changeRole(Role role) {
+        this.role = role;
+    }
+
     // 연관관계 세팅용 (Project에서 호출)
     protected void setProject(Project project) {
         this.project = project;
