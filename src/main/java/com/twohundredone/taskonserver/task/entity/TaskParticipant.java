@@ -1,5 +1,6 @@
 package com.twohundredone.taskonserver.task.entity;
 
+import com.twohundredone.taskonserver.common.entity.BaseEntity;
 import com.twohundredone.taskonserver.task.enums.TaskRole;
 import com.twohundredone.taskonserver.user.entity.User;
 import jakarta.persistence.Column;
@@ -22,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Table(name = "task_participant")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class TaskParticipant {
+public class TaskParticipant extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "task_participant_id")
     private Long taskParticipantId;
