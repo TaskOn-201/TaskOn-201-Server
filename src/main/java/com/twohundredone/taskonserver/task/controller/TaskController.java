@@ -13,6 +13,7 @@ import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
+import com.twohundredone.taskonserver.task.dto.TaskDetailView;
 import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskUpdateRequest;
@@ -53,12 +54,12 @@ public class TaskController {
     @Operation(summary = "Task 상세 조회", description = "Task 상세 정보를 조회합니다.")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/{taskId}")
-    public ResponseEntity<ApiResponse<TaskDetailResponse>> getTaskDetail(
+    public ResponseEntity<ApiResponse<TaskDetailView>> getTaskDetail(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long projectId,
             @PathVariable Long taskId
     ) {
-        TaskDetailResponse response =
+        TaskDetailView response =
                 taskService.getTaskDetail(userDetails.getId(), projectId, taskId);
 
         return ResponseEntity.ok(
@@ -107,11 +108,12 @@ public class TaskController {
             @PathVariable Long projectId,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) TaskPriority priority,
-            @RequestParam(required = false) Long userId
+            @RequestParam(required = false) Long userId,
+            @RequestParam(defaultValue = "false") boolean includeArchived
     ) {
 
         TaskBoardResponse response = taskService.getTaskBoard(
-                userDetails.getId(), projectId, title, priority, userId
+                userDetails.getId(), projectId, title, priority, userId, includeArchived
         );
 
         return ResponseEntity.ok(

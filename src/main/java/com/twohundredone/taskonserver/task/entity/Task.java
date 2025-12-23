@@ -99,4 +99,8 @@ public class Task extends BaseEntity {
         this.startDate = startDate;
         this.dueDate = dueDate;
     }
+
+    public void archive() {
+        this.status = TaskStatus.ARCHIVED;
+    }
 }

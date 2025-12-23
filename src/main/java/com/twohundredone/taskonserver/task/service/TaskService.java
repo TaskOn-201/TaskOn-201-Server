@@ -18,11 +18,13 @@ import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
+import com.twohundredone.taskonserver.task.dto.ArchivedTaskResponse;
 import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto;
 import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
+import com.twohundredone.taskonserver.task.dto.TaskDetailView;
 import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskUpdateRequest;
@@ -152,7 +154,7 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
-    public TaskDetailResponse getTaskDetail(Long loginUserId, Long projectId, Long taskId) {
+    public TaskDetailView getTaskDetail(Long loginUserId, Long projectId, Long taskId) {
 
         // 프로젝트 존재 여부
         Project project = projectRepository.findById(projectId)
@@ -169,6 +171,10 @@ public class TaskService {
         // Task가 이 프로젝트에 속한 Task인지 검증
         if (!task.getProject().getProjectId().equals(projectId)) {
             throw new CustomException(TASK_PROJECT_MISMATCH);
+        }
+
+        if (task.getStatus() == TaskStatus.ARCHIVED) {
+            return ArchivedTaskResponse.from(task, "ASSIGNEE_WITHDRAWN");
         }
 
         // TaskParticipant 목록 조회
@@ -230,6 +236,10 @@ public class TaskService {
         // Task 조회
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(TASK_NOT_FOUND));
+
+        if (task.getStatus() == TaskStatus.ARCHIVED) {
+            throw new CustomException(FORBIDDEN);
+        }
 
         // Task가 이 프로젝트에 속했는지 확인
         if (!task.getProject().getProjectId().equals(projectId)) {
@@ -345,6 +355,10 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(TASK_NOT_FOUND));
 
+        if (task.getStatus() == TaskStatus.ARCHIVED) {
+            throw new CustomException(FORBIDDEN);
+        }
+
         // Task가 이 프로젝트에 소속된 Task인지 확인
         if (!task.getProject().getProjectId().equals(projectId)) {
             throw new CustomException(TASK_PROJECT_MISMATCH);
@@ -383,7 +397,8 @@ public class TaskService {
             Long projectId,
             String title,
             TaskPriority priority,
-            Long userId
+            Long userId,
+            boolean includeArchived
     ) {
 
         // 프로젝트 권한 체크
@@ -392,14 +407,21 @@ public class TaskService {
 
         // Task 목록 조회
         List<TaskBoardItemDto> items =
-                taskQueryRepository.findBoardItemsWithFilters(projectId, title, priority, userId);
+                taskQueryRepository.findBoardItemsWithFilters(projectId, title, priority, userId, includeArchived);
 
         // 상태별로 분리
-        return TaskBoardResponse.builder()
-                .todo(filterByStatus(items, TaskStatus.TODO))
-                .inProgress(filterByStatus(items, TaskStatus.IN_PROGRESS))
-                .completed(filterByStatus(items, TaskStatus.COMPLETED))
-                .build();
+        TaskBoardResponse.TaskBoardResponseBuilder builder =
+                TaskBoardResponse.builder()
+                        .todo(filterByStatus(items, TaskStatus.TODO))
+                        .inProgress(filterByStatus(items, TaskStatus.IN_PROGRESS))
+                        .completed(filterByStatus(items, TaskStatus.COMPLETED));
+
+        // 응답에 archived를 포함할지 말지 결정
+        if (includeArchived) {
+            builder.archived(filterByStatus(items, TaskStatus.ARCHIVED));
+        }
+
+        return builder.build();
     }
 
     @Transactional
@@ -421,6 +443,10 @@ public class TaskService {
         // Task 조회
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new CustomException(TASK_NOT_FOUND));
+
+        if (task.getStatus() == TaskStatus.ARCHIVED) {
+            throw new CustomException(FORBIDDEN);
+        }
 
         // Task가 이 프로젝트에 속하는지 검증
         if (!task.getProject().getProjectId().equals(projectId)) {

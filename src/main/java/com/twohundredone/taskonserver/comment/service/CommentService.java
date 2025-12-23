@@ -89,7 +89,7 @@ public class CommentService {
             throw new CustomException(TASK_PROJECT_MISMATCH);
         }
 
-        validateTaskAccess(projectId, taskId, userId);
+        validateProjectAccess(projectId, userId);
 
         List<Comment> commentList =
                 commentRepository.findAllByTask_TaskIdOrderByCreatedAtAsc(taskId);
@@ -151,6 +151,14 @@ public class CommentService {
     }
 
     // 공통 검증 메서드
+
+    // 프로젝트 멤버 검증
+    private void validateProjectAccess(Long projectId, Long userId) {
+        projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, userId)
+                .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
+    }
+
+    // 프로젝트 + 태스크 접근 검증
     private TaskParticipant validateTaskAccess(
             Long projectId,
             Long taskId,

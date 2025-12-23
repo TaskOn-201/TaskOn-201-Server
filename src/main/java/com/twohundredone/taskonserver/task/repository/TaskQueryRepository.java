@@ -5,5 +5,5 @@ import com.twohundredone.taskonserver.task.enums.TaskPriority;
 import java.util.List;
 
 public interface TaskQueryRepository {
-    List<TaskBoardItemDto> findBoardItemsWithFilters(Long projectId, String title, TaskPriority priority, Long userId);
+    List<TaskBoardItemDto> findBoardItemsWithFilters(Long projectId, String title, TaskPriority priority, Long userId, boolean includeArchived);
 }

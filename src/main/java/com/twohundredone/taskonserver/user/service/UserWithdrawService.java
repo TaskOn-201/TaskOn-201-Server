@@ -68,11 +68,21 @@ public class UserWithdrawService {
 
         for (TaskParticipant participant : participants) {
             if (participant.isAssignee()) {
-                taskParticipantQueryRepository
+
+                boolean delegated = taskParticipantQueryRepository
                         .findNextAssignee(participant.getTask(), user)
-                        .ifPresent(next ->
-                                next.updateRole(TaskRole.ASSIGNEE));
+                        .map(next -> {
+                            next.updateRole(TaskRole.ASSIGNEE);
+                            return true;
+                        })
+                        .orElse(false);
+
+                // 위임 실패한 경우에만 ARCHIVED
+                if (!delegated) {
+                    participant.getTask().archive();
+                }
             }
+
             taskParticipantRepository.delete(participant);
         }
     }

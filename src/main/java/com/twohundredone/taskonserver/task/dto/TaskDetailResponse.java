@@ -22,7 +22,7 @@ public record TaskDetailResponse(
 
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
+) implements TaskDetailView {
     @Builder
     public record AssigneeDto(
             Long userId,

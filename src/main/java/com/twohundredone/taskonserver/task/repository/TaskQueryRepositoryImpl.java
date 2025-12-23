@@ -10,6 +10,7 @@ import com.twohundredone.taskonserver.task.entity.QTaskParticipant;
 import com.twohundredone.taskonserver.task.entity.Task;
 import com.twohundredone.taskonserver.task.entity.TaskParticipant;
 import com.twohundredone.taskonserver.task.enums.TaskPriority;
+import com.twohundredone.taskonserver.task.enums.TaskStatus;
 import com.twohundredone.taskonserver.user.entity.QUser;
 import com.twohundredone.taskonserver.user.entity.User;
 import java.util.ArrayList;
@@ -33,7 +34,8 @@ public class TaskQueryRepositoryImpl implements TaskQueryRepository {
             Long projectId,
             String title,
             TaskPriority priority,
-            Long userId
+            Long userId,
+            boolean includeArchived
     ) {
 
         List<Tuple> rows = queryFactory
@@ -45,7 +47,8 @@ public class TaskQueryRepositoryImpl implements TaskQueryRepository {
                         task.project.projectId.eq(projectId),
                         titleContains(title),
                         priorityEq(priority),
-                        userCondition(userId)
+                        userCondition(userId),
+                        notArchivedUnlessIncluded(includeArchived)
                 )
                 .orderBy(task.createdAt.desc())
                 .fetch();
@@ -114,5 +117,9 @@ public class TaskQueryRepositoryImpl implements TaskQueryRepository {
         return userId != null
                 ? taskParticipant.user.userId.eq(userId)
                 : null;
+    }
+
+    private BooleanExpression notArchivedUnlessIncluded(boolean includeArchived) {
+        return includeArchived ? null : task.status.ne(TaskStatus.ARCHIVED);
     }
 }
