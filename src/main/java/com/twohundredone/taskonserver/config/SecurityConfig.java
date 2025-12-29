@@ -9,6 +9,7 @@ import com.twohundredone.taskonserver.auth.service.CustomUserDetailsService;
 import com.twohundredone.taskonserver.global.security.JwtAccessDeniedHandler;
 import com.twohundredone.taskonserver.global.security.JwtAuthenticationEntryPoint;
 import com.twohundredone.taskonserver.user.service.OnlineStatusService;
+import jakarta.servlet.DispatcherType;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -64,6 +65,14 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
+                        // WebSocket / SockJS 전용
+                        .dispatcherTypeMatchers(
+                                DispatcherType.REQUEST,
+                                DispatcherType.ASYNC,
+                                DispatcherType.ERROR
+                        ).permitAll()
+
                         .requestMatchers(
                                 "/stomp-test.html",
                                 "/ws/**",
@@ -72,13 +81,17 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/favicon.ico"
                         ).permitAll()
-                        .requestMatchers("/api/auth/signup").permitAll()
-                        .requestMatchers("/api/auth/check-email").permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/reissue").permitAll()
-                        .requestMatchers("/oauth2/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
+
+                        // 인증 API
+                        .requestMatchers(
+                                "/api/auth/signup",
+                                "/api/auth/check-email",
+                                "/api/auth/login",
+                                "/api/auth/reissue",
+                                "/oauth2/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
 
                         // 로그아웃은 인증 필요
                         .requestMatchers("/api/auth/logout").authenticated()
