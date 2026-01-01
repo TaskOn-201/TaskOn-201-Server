@@ -26,7 +26,7 @@ jwt:
   refresh-token-validity-ms: ${JWT_REFRESH_TOKEN_VALIDITY_MS:1209600000}
 
 frontend:
-  url: http://localhost:3000,https://taskon.co.kr
+  url: http://localhost:3000,https://taskon.co.kr,https://www.taskon.co.kr
 
 logging:
   level:
