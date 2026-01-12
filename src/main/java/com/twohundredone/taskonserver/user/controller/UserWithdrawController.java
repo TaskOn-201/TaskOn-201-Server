@@ -8,6 +8,8 @@ import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.user.service.UserWithdrawService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,9 +28,11 @@ public class UserWithdrawController {
     @SecurityRequirement(name = "Authorization")
     @DeleteMapping("/me")
     public ResponseEntity<ApiResponse<Void>> withdraw(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        userWithdrawService.withdraw(userDetails.getId());
+        userWithdrawService.withdraw(userDetails.getId(), request, response);
         return ResponseEntity.ok(
                 ApiResponse.success(SUCCESS_DELETE_USER, null)
         );
