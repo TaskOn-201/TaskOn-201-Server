@@ -19,12 +19,15 @@ import com.twohundredone.taskonserver.project.entity.Project;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.task.dto.ArchivedTaskResponse;
+import com.twohundredone.taskonserver.task.dto.TaskBoardBaseRow;
 import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto;
+import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto.TaskBoardItemDtoBuilder;
 import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailResponse;
 import com.twohundredone.taskonserver.task.dto.TaskDetailView;
+import com.twohundredone.taskonserver.task.dto.TaskParticipantRow;
 import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskStatusUpdateResponse;
 import com.twohundredone.taskonserver.task.dto.TaskUpdateRequest;
@@ -33,6 +36,7 @@ import com.twohundredone.taskonserver.task.entity.TaskParticipant;
 import com.twohundredone.taskonserver.task.enums.TaskPriority;
 import com.twohundredone.taskonserver.task.enums.TaskRole;
 import com.twohundredone.taskonserver.task.enums.TaskStatus;
+import com.twohundredone.taskonserver.task.repository.TaskParticipantQueryRepository;
 import com.twohundredone.taskonserver.task.repository.TaskParticipantRepository;
 import com.twohundredone.taskonserver.task.repository.TaskQueryRepository;
 import com.twohundredone.taskonserver.task.repository.TaskRepository;
@@ -40,7 +44,9 @@ import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +60,7 @@ public class TaskService {
     private final TaskParticipantRepository taskParticipantRepository;
     private final UserRepository userRepository;
     private final TaskQueryRepository taskQueryRepository;
+    private final TaskParticipantQueryRepository taskParticipantQueryRepository;
     private final CommentRepository commentRepository;
     private final ChatDomainService chatDomainService;
 
@@ -400,28 +407,71 @@ public class TaskService {
             Long userId,
             boolean includeArchived
     ) {
-
-        // 프로젝트 권한 체크
+        // 권한 체크
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, loginUserId)
                 .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
-        // Task 목록 조회
-        List<TaskBoardItemDto> items =
-                taskQueryRepository.findBoardItemsWithFilters(projectId, title, priority, userId, includeArchived);
+        // 1️⃣ Task 기본 조회
+        List<TaskBoardBaseRow> tasks =
+                taskQueryRepository.findTasksForBoard(projectId, title, priority, includeArchived);
 
-        // 상태별로 분리
-        TaskBoardResponse.TaskBoardResponseBuilder builder =
-                TaskBoardResponse.builder()
-                        .todo(filterByStatus(items, TaskStatus.TODO))
-                        .inProgress(filterByStatus(items, TaskStatus.IN_PROGRESS))
-                        .completed(filterByStatus(items, TaskStatus.COMPLETED));
-
-        // 응답에 archived를 포함할지 말지 결정
-        if (includeArchived) {
-            builder.archived(filterByStatus(items, TaskStatus.ARCHIVED));
+        if (tasks.isEmpty()) {
+            return TaskBoardResponse.builder()
+                    .todo(List.of())
+                    .inProgress(List.of())
+                    .completed(List.of())
+                    .archived(List.of())
+                    .build();
         }
 
-        return builder.build();
+        List<Long> taskIds = tasks.stream()
+                .map(TaskBoardBaseRow::taskId)
+                .toList();
+
+        // 2️⃣ Participant 조회
+        List<TaskParticipantRow> participants =
+                taskParticipantQueryRepository.findParticipantsByTaskIds(taskIds);
+
+        // 3️⃣ Map으로 정리
+        Map<Long, List<String>> participantMap = new LinkedHashMap<>();
+        Map<Long, TaskBoardItemDto.TaskBoardItemDtoBuilder> taskMap = new LinkedHashMap<>();
+
+        tasks.forEach(t -> {
+            participantMap.put(t.taskId(), new ArrayList<>());
+
+            taskMap.put(
+                    t.taskId(),
+                    TaskBoardItemDto.builder()
+                            .taskId(t.taskId())
+                            .title(t.title())
+                            .status(t.status())
+                            .priority(t.priority())
+            );
+        });
+
+
+        // 4️⃣ 참여자 매핑
+        for (TaskParticipantRow p : participants) {
+            TaskBoardItemDto.TaskBoardItemDtoBuilder builder = taskMap.get(p.taskId());
+            if (builder == null) continue;
+
+            if (p.assignee()) {
+                builder.assigneeProfileImageUrl(p.profileImageUrl());
+            } else {
+                participantMap.get(p.taskId()).add(p.profileImageUrl());
+            }
+        }
+        taskMap.forEach((taskId, builder) ->
+                builder.participantProfileImageUrls(participantMap.get(taskId))
+        );
+
+        // 5️⃣ 상태별 분리
+        return TaskBoardResponse.builder()
+                .todo(filter(taskMap, TaskStatus.TODO))
+                .inProgress(filter(taskMap, TaskStatus.IN_PROGRESS))
+                .completed(filter(taskMap, TaskStatus.COMPLETED))
+                .archived(includeArchived ? filter(taskMap, TaskStatus.ARCHIVED) : null)
+                .build();
     }
 
     @Transactional
@@ -517,12 +567,15 @@ public class TaskService {
         }
     }
 
-    private List<TaskBoardItemDto> filterByStatus(
-            List<TaskBoardItemDto> items, TaskStatus status
+    private List<TaskBoardItemDto> filter(
+            Map<Long, TaskBoardItemDto.TaskBoardItemDtoBuilder> map,
+            TaskStatus status
     ) {
-        return items.stream()
-                .filter(item -> item.status() == status)
+        return map.values().stream()
+                .map(TaskBoardItemDto.TaskBoardItemDtoBuilder::build)
+                .filter(dto -> dto.status() == status)
                 .toList();
     }
+
 
 }
