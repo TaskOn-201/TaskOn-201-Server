@@ -1,8 +1,10 @@
 package com.twohundredone.taskonserver.task.repository;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.twohundredone.taskonserver.task.dto.TaskBoardBaseRow;
 import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto;
 import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto.TaskBoardItemDtoBuilder;
 import com.twohundredone.taskonserver.task.entity.QTask;
@@ -30,30 +32,32 @@ public class TaskQueryRepositoryImpl implements TaskQueryRepository {
     QUser user = QUser.user;
 
     @Override
-    public List<TaskBoardItemDto> findBoardItemsWithFilters(
+    public List<TaskBoardBaseRow> findTasksForBoard(
             Long projectId,
             String title,
             TaskPriority priority,
-            Long userId,
             boolean includeArchived
     ) {
 
-        List<Tuple> rows = queryFactory
-                .select(task, taskParticipant, user)
+        return queryFactory
+                .select(
+                        Projections.constructor(
+                                TaskBoardBaseRow.class,
+                                task.taskId,
+                                task.taskTitle,
+                                task.status,
+                                task.priority
+                        )
+                )
                 .from(task)
-                .leftJoin(taskParticipant).on(taskParticipant.task.eq(task))
-                .leftJoin(taskParticipant.user, user)
                 .where(
                         task.project.projectId.eq(projectId),
                         titleContains(title),
                         priorityEq(priority),
-                        userCondition(userId),
                         notArchivedUnlessIncluded(includeArchived)
                 )
                 .orderBy(task.createdAt.desc())
                 .fetch();
-
-        return convertToBoardItems(rows);
     }
 
     private List<TaskBoardItemDto> convertToBoardItems(List<Tuple> rows) {
