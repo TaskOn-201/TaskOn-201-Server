@@ -18,36 +18,32 @@ const BASE_URL = 'https://api.taskon.co.kr';
 const EMAIL = __ENV.EMAIL;
 const PASSWORD = __ENV.PASSWORD;
 
-/**
- * 🔑 로그인은 1번만
- */
-export function setup() {
-  const res = http.post(
+export default function () {
+  const loginRes = http.post(
       `${BASE_URL}/api/auth/login`,
       JSON.stringify({ email: EMAIL, password: PASSWORD }),
       { headers: { 'Content-Type': 'application/json' } }
   );
 
-  check(res, { 'login success': r => r.status === 200 });
+  if (!check(loginRes, { 'login success': r => r.status === 200 })) {
+    return;
+  }
 
-  return {
-    token: res.json('data.accessToken'),
-  };
-}
+  const token = loginRes.json('data.accessToken');
 
-export default function (data) {
   const headers = {
-    Authorization: `Bearer ${data.token}`,
+    Authorization: `Bearer ${token}`,
   };
 
-  /* 1️⃣ 프로젝트 목록 */
+  /* 프로젝트 목록 */
   const projectRes = http.get(`${BASE_URL}/api/projects`, { headers });
   if (!check(projectRes, { 'projects ok': r => r.status === 200 })) return;
 
   const projectId = projectRes.json('data[0].projectId');
+  if (!projectId) return;
   sleep(0.2);
 
-  /* 2️⃣ Task 보드 (핵심 병목) */
+  /* Task 보드 */
   const taskRes = http.get(
       `${BASE_URL}/api/projects/${projectId}/tasks/board`,
       { headers }
@@ -56,7 +52,7 @@ export default function (data) {
 
   sleep(0.2);
 
-  /* 3️⃣ 채팅방 리스트 */
+  /* 채팅방 리스트 */
   const chatRoomsRes = http.get(`${BASE_URL}/api/chat/rooms`, { headers });
   if (!check(chatRoomsRes, { 'chat rooms ok': r => r.status === 200 })) return;
 
@@ -65,7 +61,7 @@ export default function (data) {
 
   sleep(0.2);
 
-  /* 4️⃣ 채팅 메시지 */
+  /* 채팅 메시지 */
   const msgRes = http.get(
       `${BASE_URL}/api/chat/rooms/${chatRoomId}/messages?page=0&size=20`,
       { headers }
