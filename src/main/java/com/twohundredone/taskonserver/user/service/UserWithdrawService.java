@@ -16,6 +16,7 @@ import com.twohundredone.taskonserver.task.entity.TaskParticipant;
 import com.twohundredone.taskonserver.task.enums.TaskRole;
 import com.twohundredone.taskonserver.task.repository.TaskParticipantQueryRepository;
 import com.twohundredone.taskonserver.task.repository.TaskParticipantRepository;
+import com.twohundredone.taskonserver.task.service.TaskBoardCacheEvictor;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,14 +37,21 @@ public class UserWithdrawService {
     private final TaskParticipantRepository taskParticipantRepository;
     private final ChatUserRepository chatUserRepository;
     private final CommentRepository commentRepository;
-
     private final ProjectMemberQueryRepository projectMemberQueryRepository;
     private final TaskParticipantQueryRepository taskParticipantQueryRepository;
+    private final TaskBoardCacheEvictor taskBoardCacheEvictor;
 
     @Transactional
     public void withdraw(Long userId, HttpServletRequest request, HttpServletResponse response) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(USER_NOT_FOUND));
+
+        // 캐시 무효화를 위한 projectId 수집
+        List<Long> projectIds =
+                projectMemberRepository.findAllByUser_UserId(user.getUserId())
+                        .stream()
+                        .map(pm -> pm.getProject().getProjectId())
+                        .toList();
 
         handleProjectMembers(user);
         handleTaskParticipants(user);
@@ -54,8 +62,11 @@ public class UserWithdrawService {
         refreshTokenService.delete(userId);
         onlineStatusService.setOffline(userId);
 
-        userRepository.delete(user); // 🔥 Hard Delete
+        userRepository.delete(user); // Hard Delete
         CookieUtil.deleteRefreshTokenCookie(request, response);
+
+        // TaskBoard 캐시 무효화
+        projectIds.forEach(taskBoardCacheEvictor::evictProjectBoard);
     }
 
     private void handleProjectMembers(User user) {
