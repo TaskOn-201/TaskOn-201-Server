@@ -21,7 +21,6 @@ import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.task.dto.ArchivedTaskResponse;
 import com.twohundredone.taskonserver.task.dto.TaskBoardBaseRow;
 import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto;
-import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto.TaskBoardItemDtoBuilder;
 import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;
 import com.twohundredone.taskonserver.task.dto.TaskCreateResponse;
@@ -48,6 +47,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,10 +59,10 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskParticipantRepository taskParticipantRepository;
     private final UserRepository userRepository;
-    private final TaskQueryRepository taskQueryRepository;
-    private final TaskParticipantQueryRepository taskParticipantQueryRepository;
+    private final TaskBoardQueryService taskBoardQueryService;
     private final CommentRepository commentRepository;
     private final ChatDomainService chatDomainService;
+    private final TaskBoardCacheEvictor taskBoardCacheEvictor;
 
     @Transactional
     public TaskCreateResponse createTask(Long loginUserId, Long projectId, TaskCreateRequest request) {
@@ -145,6 +145,9 @@ public class TaskService {
         List<Long> responseParticipantIds = participantIds.stream()
                 .filter(id -> !id.equals(loginUserId))
                 .toList();
+
+        // 캐시 무효화 (쓰기 이후)
+        taskBoardCacheEvictor.evictProjectBoard(projectId);
 
         return TaskCreateResponse.builder()
                 .taskId(task.getTaskId())
@@ -330,6 +333,9 @@ public class TaskService {
                                 .build())
                         .toList();
 
+        // 캐시 무효화 (쓰기 이후)
+        taskBoardCacheEvictor.evictProjectBoard(projectId);
+
         // 최종 Response 반환
         return TaskDetailResponse.builder()
                 .taskId(task.getTaskId())
@@ -396,6 +402,9 @@ public class TaskService {
 
         // Task 삭제
         taskRepository.delete(task);
+
+        // 캐시 무효화 (쓰기 이후)
+        taskBoardCacheEvictor.evictProjectBoard(projectId);
     }
 
     @Transactional(readOnly = true)
@@ -411,67 +420,8 @@ public class TaskService {
         projectMemberRepository.findByProject_ProjectIdAndUser_UserId(projectId, loginUserId)
                 .orElseThrow(() -> new CustomException(PROJECT_FORBIDDEN));
 
-        // 1️⃣ Task 기본 조회
-        List<TaskBoardBaseRow> tasks =
-                taskQueryRepository.findTasksForBoard(projectId, title, priority, includeArchived);
-
-        if (tasks.isEmpty()) {
-            return TaskBoardResponse.builder()
-                    .todo(List.of())
-                    .inProgress(List.of())
-                    .completed(List.of())
-                    .archived(List.of())
-                    .build();
-        }
-
-        List<Long> taskIds = tasks.stream()
-                .map(TaskBoardBaseRow::taskId)
-                .toList();
-
-        // 2️⃣ Participant 조회
-        List<TaskParticipantRow> participants =
-                taskParticipantQueryRepository.findParticipantsByTaskIds(taskIds);
-
-        // 3️⃣ Map으로 정리
-        Map<Long, List<String>> participantMap = new LinkedHashMap<>();
-        Map<Long, TaskBoardItemDto.TaskBoardItemDtoBuilder> taskMap = new LinkedHashMap<>();
-
-        tasks.forEach(t -> {
-            participantMap.put(t.taskId(), new ArrayList<>());
-
-            taskMap.put(
-                    t.taskId(),
-                    TaskBoardItemDto.builder()
-                            .taskId(t.taskId())
-                            .title(t.title())
-                            .status(t.status())
-                            .priority(t.priority())
-            );
-        });
-
-
-        // 4️⃣ 참여자 매핑
-        for (TaskParticipantRow p : participants) {
-            TaskBoardItemDto.TaskBoardItemDtoBuilder builder = taskMap.get(p.taskId());
-            if (builder == null) continue;
-
-            if (p.assignee()) {
-                builder.assigneeProfileImageUrl(p.profileImageUrl());
-            } else {
-                participantMap.get(p.taskId()).add(p.profileImageUrl());
-            }
-        }
-        taskMap.forEach((taskId, builder) ->
-                builder.participantProfileImageUrls(participantMap.get(taskId))
-        );
-
-        // 5️⃣ 상태별 분리
-        return TaskBoardResponse.builder()
-                .todo(filter(taskMap, TaskStatus.TODO))
-                .inProgress(filter(taskMap, TaskStatus.IN_PROGRESS))
-                .completed(filter(taskMap, TaskStatus.COMPLETED))
-                .archived(includeArchived ? filter(taskMap, TaskStatus.ARCHIVED) : null)
-                .build();
+        // 캐시되는 메서드 호출 (loginUserId 없음)
+        return taskBoardQueryService.getTaskBoardCached(projectId, title, priority, userId, includeArchived);
     }
 
     @Transactional
@@ -520,6 +470,9 @@ public class TaskService {
         // 상태 변경
         task.updateStatus(request.status());
 
+        // 캐시 무효화 (쓰기 이후)
+        taskBoardCacheEvictor.evictProjectBoard(projectId);
+
         // 응답 반환
         return TaskStatusUpdateResponse.builder()
                 .taskId(task.getTaskId())
@@ -566,16 +519,4 @@ public class TaskService {
             );
         }
     }
-
-    private List<TaskBoardItemDto> filter(
-            Map<Long, TaskBoardItemDto.TaskBoardItemDtoBuilder> map,
-            TaskStatus status
-    ) {
-        return map.values().stream()
-                .map(TaskBoardItemDto.TaskBoardItemDtoBuilder::build)
-                .filter(dto -> dto.status() == status)
-                .toList();
-    }
-
-
 }
