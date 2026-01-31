@@ -11,6 +11,7 @@ public interface TaskParticipantQueryRepository {
 
     Optional<TaskParticipant> findNextAssignee(Task task, User excludeUser);
 
-    // ✅ Task Board 전용
+    // Task Board 전용
     List<TaskParticipantRow> findParticipantsByTaskIds(List<Long> taskIds);
+    Long findAssigneeUserId(Long taskId);
 }

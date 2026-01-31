@@ -56,4 +56,18 @@ public class TaskParticipantQueryRepositoryImpl
                 .where(taskParticipant.task.taskId.in(taskIds))
                 .fetch();
     }
+
+    @Override
+    public Long findAssigneeUserId(Long taskId) {
+        QTaskParticipant tp = QTaskParticipant.taskParticipant;
+
+        return queryFactory
+                .select(tp.user.userId)
+                .from(tp)
+                .where(
+                        tp.task.taskId.eq(taskId),
+                        tp.taskRole.eq(TaskRole.ASSIGNEE) // 너 enum/값에 맞게 수정
+                )
+                .fetchFirst();
+    }
 }
