@@ -39,6 +39,7 @@ import com.twohundredone.taskonserver.task.repository.TaskParticipantQueryReposi
 import com.twohundredone.taskonserver.task.repository.TaskParticipantRepository;
 import com.twohundredone.taskonserver.task.repository.TaskQueryRepository;
 import com.twohundredone.taskonserver.task.repository.TaskRepository;
+import com.twohundredone.taskonserver.task.search.event.TaskChangedEvent;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import java.time.LocalDate;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +65,7 @@ public class TaskService {
     private final CommentRepository commentRepository;
     private final ChatDomainService chatDomainService;
     private final TaskBoardCacheEvictor taskBoardCacheEvictor;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public TaskCreateResponse createTask(Long loginUserId, Long projectId, TaskCreateRequest request) {
@@ -148,6 +151,10 @@ public class TaskService {
 
         // 캐시 무효화 (쓰기 이후)
         taskBoardCacheEvictor.evictProjectBoard(projectId);
+
+        applicationEventPublisher.publishEvent(
+                new TaskChangedEvent(task.getTaskId(), TaskChangedEvent.ChangeType.CREATED)
+        );
 
         return TaskCreateResponse.builder()
                 .taskId(task.getTaskId())
@@ -336,6 +343,10 @@ public class TaskService {
         // 캐시 무효화 (쓰기 이후)
         taskBoardCacheEvictor.evictProjectBoard(projectId);
 
+        applicationEventPublisher.publishEvent(
+                new TaskChangedEvent(task.getTaskId(), TaskChangedEvent.ChangeType.UPDATED)
+        );
+
         // 최종 Response 반환
         return TaskDetailResponse.builder()
                 .taskId(task.getTaskId())
@@ -405,6 +416,9 @@ public class TaskService {
 
         // 캐시 무효화 (쓰기 이후)
         taskBoardCacheEvictor.evictProjectBoard(projectId);
+        applicationEventPublisher.publishEvent(
+                new TaskChangedEvent(taskId, TaskChangedEvent.ChangeType.DELETED)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -472,6 +486,10 @@ public class TaskService {
 
         // 캐시 무효화 (쓰기 이후)
         taskBoardCacheEvictor.evictProjectBoard(projectId);
+
+        applicationEventPublisher.publishEvent(
+                new TaskChangedEvent(task.getTaskId(), TaskChangedEvent.ChangeType.UPDATED)
+        );
 
         // 응답 반환
         return TaskStatusUpdateResponse.builder()
