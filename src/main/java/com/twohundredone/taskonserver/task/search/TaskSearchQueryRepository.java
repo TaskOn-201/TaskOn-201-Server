@@ -31,7 +31,7 @@ public class TaskSearchQueryRepository {
             int page,
             int size
     ) {
-        // 1️⃣ BoolQuery 생성 (Boot 3.x 방식)
+        // BoolQuery 생성 (Boot 3.x 방식)
         Query query = BoolQuery.of(b -> {
             // projectId는 반드시 필터
             b.filter(f -> f.term(t -> t.field("projectId").value(projectId)));
@@ -54,13 +54,13 @@ public class TaskSearchQueryRepository {
         Pageable pageable =
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        // 2️⃣ NativeQuery (Boot 3.x 전용)
+        // NativeQuery (Boot 3.x 전용)
         NativeQuery searchQuery = NativeQuery.builder()
                 .withQuery(query)
                 .withPageable(pageable)
                 .build();
 
-        // 3️⃣ 실행
+        // 실행
         SearchHits<TaskSearchDocument> hits =
                 operations.search(searchQuery, TaskSearchDocument.class);
 

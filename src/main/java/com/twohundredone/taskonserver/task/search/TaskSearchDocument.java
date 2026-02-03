@@ -1,8 +1,8 @@
 package com.twohundredone.taskonserver.task.search;
 
 import com.twohundredone.taskonserver.task.entity.Task;
+import java.time.LocalDate;
 import org.springframework.data.annotation.Id;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,7 +36,7 @@ public class TaskSearchDocument {
     private Long assigneeId;
 
     @Field(type = FieldType.Date)
-    private LocalDateTime createdAt;
+    private LocalDate createdAt;
 
     public static TaskSearchDocument from(
             Task task,
@@ -49,7 +49,7 @@ public class TaskSearchDocument {
                 .status(task.getStatus().name())
                 .priority(task.getPriority().name())
                 .assigneeId(assigneeId)
-                .createdAt(task.getCreatedAt())
+                .createdAt(task.getCreatedAt().toLocalDate())
                 .build();
     }
 
