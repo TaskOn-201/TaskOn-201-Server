@@ -10,6 +10,9 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
 
+  elasticsearch:
+    uris: ${SPRING_ELASTICSEARCH_URIS:${ES_URIS:http://elasticsearch:9200}}
+
   jpa:
     hibernate:
       ddl-auto: update
