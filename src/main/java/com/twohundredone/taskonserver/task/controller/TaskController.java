@@ -8,6 +8,7 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.TASK_UPDATE;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.UPDATED_TASK_STATUS;
 
+import com.twohundredone.taskonserver.common.dto.PageResponse;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto;
@@ -147,7 +148,7 @@ public class TaskController {
     @Operation(summary = "Task 검색", description = "프로젝트 내 Task 검색/필터/페이징")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<TaskBoardItemDto>>> searchTasks(
+    public ResponseEntity<ApiResponse<PageResponse<TaskBoardItemDto>>> searchTasks(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long projectId,
             @RequestParam(required = false) String keyword,
@@ -168,7 +169,13 @@ public class TaskController {
                 size
         );
 
-        return ResponseEntity.ok(ApiResponse.success(GET_TASK_SEARCH_SUCCESS, result));
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        GET_TASK_SEARCH_SUCCESS,
+                        PageResponse.from(result)
+                )
+        );
+
     }
 
 
