@@ -10,6 +10,7 @@ import com.twohundredone.taskonserver.chat.dto.ChatMessageListResponse;
 import com.twohundredone.taskonserver.chat.dto.ChatMessageRequest;
 import com.twohundredone.taskonserver.chat.dto.ChatMessageSendResponse;
 import com.twohundredone.taskonserver.chat.dto.ChatRoomListResponse;
+import com.twohundredone.taskonserver.chat.dto.ChatRoomListResponse.Participant;
 import com.twohundredone.taskonserver.chat.dto.ChatRoomSummaryDto;
 import com.twohundredone.taskonserver.chat.entity.ChatMessage;
 import com.twohundredone.taskonserver.chat.entity.ChatRoom;
@@ -22,13 +23,16 @@ import com.twohundredone.taskonserver.chat.util.ChatTimeFormatter;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -68,7 +72,7 @@ public class ChatService {
                 .collect(Collectors.toMap(User::getUserId, u -> u));
 
         // roomId -> participants 리스트로 그룹핑
-        Map<Long, List<ChatRoomListResponse.Participant>> participantsByRoomId =
+        Map<Long, List<Participant>> participantsByRoomId =
                 chatUsers.stream()
                         .filter(cu -> !cu.getUserId().equals(userId))
                         .collect(Collectors.groupingBy(

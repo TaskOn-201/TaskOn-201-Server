@@ -1,6 +1,5 @@
 package com.twohundredone.taskonserver.project.controller;
 
-import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.ADD_PROJECT_MEMBER_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.DELETE_PROJECT_MEMBER_SUCCESS;
 
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;

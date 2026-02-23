@@ -1,10 +1,7 @@
 package com.twohundredone.taskonserver.auth.jwt;
 
-import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetailsService;
 import com.twohundredone.taskonserver.user.service.OnlineStatusService;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -10,7 +10,6 @@ import com.twohundredone.taskonserver.auth.dto.LoginRequest;
 import com.twohundredone.taskonserver.auth.dto.ReissueResponse;
 import com.twohundredone.taskonserver.auth.dto.SignUpRequest;
 import com.twohundredone.taskonserver.auth.dto.SignUpResponse;
-import com.twohundredone.taskonserver.auth.dto.TokenPair;
 import com.twohundredone.taskonserver.auth.dto.LoginResponse;
 import com.twohundredone.taskonserver.auth.service.AuthService;
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;

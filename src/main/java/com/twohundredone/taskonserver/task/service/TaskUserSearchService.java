@@ -3,7 +3,6 @@ package com.twohundredone.taskonserver.task.service;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_FORBIDDEN;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusError.PROJECT_NOT_FOUND;
 
-import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectRepository;
