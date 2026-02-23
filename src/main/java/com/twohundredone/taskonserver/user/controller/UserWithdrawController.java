@@ -1,6 +1,5 @@
 package com.twohundredone.taskonserver.user.controller;
 
-import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.MODIFY_MY_INFO_SUCCESS;
 import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.SUCCESS_DELETE_USER;
 
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;

@@ -1,11 +1,9 @@
 package com.twohundredone.taskonserver.task.dto;
 
-import com.twohundredone.taskonserver.task.entity.Task;
 import com.twohundredone.taskonserver.task.enums.TaskPriority;
 import com.twohundredone.taskonserver.task.enums.TaskStatus;
 import java.util.List;
 import lombok.Builder;
-import lombok.Getter;
 
 import java.time.LocalDate;
 

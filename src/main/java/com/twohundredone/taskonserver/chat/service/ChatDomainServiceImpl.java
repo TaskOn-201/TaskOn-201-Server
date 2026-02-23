@@ -5,7 +5,6 @@ import static com.twohundredone.taskonserver.chat.enums.ChatType.TASK_GROUP;
 
 import com.twohundredone.taskonserver.chat.entity.ChatRoom;
 import com.twohundredone.taskonserver.chat.entity.ChatUser;
-import com.twohundredone.taskonserver.chat.enums.ChatType;
 import com.twohundredone.taskonserver.chat.repository.ChatMessageRepository;
 import com.twohundredone.taskonserver.chat.repository.ChatRoomRepository;
 import com.twohundredone.taskonserver.chat.repository.ChatUserRepository;
