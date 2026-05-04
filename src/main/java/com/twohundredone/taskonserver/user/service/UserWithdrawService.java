@@ -9,7 +9,6 @@ import com.twohundredone.taskonserver.chat.repository.ChatUserRepository;
 import com.twohundredone.taskonserver.comment.repository.CommentRepository;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.entity.ProjectMember;
-import com.twohundredone.taskonserver.project.enums.Role;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberQueryRepository;
 import com.twohundredone.taskonserver.project.repository.ProjectMemberRepository;
 import com.twohundredone.taskonserver.task.entity.TaskParticipant;

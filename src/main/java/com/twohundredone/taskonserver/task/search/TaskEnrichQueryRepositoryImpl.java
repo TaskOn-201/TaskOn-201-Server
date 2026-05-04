@@ -3,7 +3,6 @@ package com.twohundredone.taskonserver.task.search;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.twohundredone.taskonserver.comment.entity.QComment;
-import com.twohundredone.taskonserver.task.dto.TaskParticipantRow;
 import com.twohundredone.taskonserver.task.entity.QTaskParticipant;
 import com.twohundredone.taskonserver.task.enums.TaskRole;
 import com.twohundredone.taskonserver.task.search.dto.TaskCommentCountRow;

@@ -5,7 +5,6 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.
 import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.common.dto.SliceResponse;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
-import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.task.dto.TaskUserSearchResponse;
 import com.twohundredone.taskonserver.task.service.TaskUserSearchService;
 import io.swagger.v3.oas.annotations.Operation;

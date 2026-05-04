@@ -10,7 +10,6 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.
 
 import com.twohundredone.taskonserver.common.dto.PageResponse;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
-import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.task.dto.TaskBoardItemDto;
 import com.twohundredone.taskonserver.task.dto.TaskBoardResponse;
 import com.twohundredone.taskonserver.task.dto.TaskCreateRequest;

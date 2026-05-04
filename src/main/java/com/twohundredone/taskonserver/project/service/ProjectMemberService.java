@@ -10,7 +10,6 @@ import static com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess.
 import com.twohundredone.taskonserver.chat.service.ChatDomainService;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
 import com.twohundredone.taskonserver.global.enums.ResponseStatusError;
-import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import com.twohundredone.taskonserver.global.exception.CustomException;
 import com.twohundredone.taskonserver.project.dto.AddMemberRequest;
 import com.twohundredone.taskonserver.project.dto.AddMemberResponse;
@@ -22,7 +21,6 @@ import com.twohundredone.taskonserver.project.repository.ProjectRepository;
 import com.twohundredone.taskonserver.user.entity.User;
 import com.twohundredone.taskonserver.user.repository.UserRepository;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -9,7 +9,6 @@ import com.twohundredone.taskonserver.auth.service.CustomUserDetails;
 import com.twohundredone.taskonserver.comment.dto.*;
 import com.twohundredone.taskonserver.comment.service.CommentService;
 import com.twohundredone.taskonserver.global.dto.ApiResponse;
-import com.twohundredone.taskonserver.global.enums.ResponseStatusSuccess;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;

@@ -1,7 +1,5 @@
 package com.twohundredone.taskonserver.project.dto;
 
-//import com.fasterxml.jackson.annotation.JsonProperty;
-//import com.twohundredone.taskonserver.project.entity
 import lombok.Builder;
 import lombok.Getter;
 
@@ -29,6 +27,5 @@ public class SidebarInfoResponse {
         private boolean isOnline;
     }
 
-    //TODO: 읽지 않은 채팅 수 축가 예정
     Integer unreadChatCount;
 }
